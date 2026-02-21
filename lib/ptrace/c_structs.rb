@@ -4,6 +4,10 @@ require "rbconfig"
 
 module Ptrace
   module CStructs
+    WORD_SIZE = 8
+    WORD_MASK = (1 << (WORD_SIZE * 8)) - 1
+    PACK_FORMAT = "Q<"
+
     X86_64_REGS = %i[
       r15 r14 r13 r12 rbp rbx r11 r10 r9 r8
       rax rcx rdx rsi rdi orig_rax rip cs eflags
@@ -29,6 +33,22 @@ module Ptrace
 
     def regs_size(arch: self.arch)
       reg_names(arch: arch).size * 8
+    end
+
+    def decode_regs(source, arch: self.arch)
+      bytes = source.is_a?(String) ? source : source[0, regs_size(arch: arch)]
+      values = bytes.unpack("#{PACK_FORMAT}*")
+      names = reg_names(arch: arch)
+
+      names.each_with_index.each_with_object({}) do |(name, index), decoded|
+        decoded[name] = values.fetch(index, 0)
+      end
+    end
+
+    def encode_regs(regs, arch: self.arch)
+      names = reg_names(arch: arch)
+      values = names.map { |name| Integer(regs.fetch(name, 0)) & WORD_MASK }
+      values.pack("#{PACK_FORMAT}*")
     end
 
     def detect_arch
