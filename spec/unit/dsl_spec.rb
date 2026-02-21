@@ -104,6 +104,7 @@ RSpec.describe Ptrace do
         Ptrace::Constants::PTRACE_O_TRACECLONE |
         Ptrace::Constants::PTRACE_O_TRACEFORK |
         Ptrace::Constants::PTRACE_O_TRACEVFORK
+      allow(child_tracee).to receive(:set_options).with(follow_children_options).and_return(child_tracee)
 
       expect(Ptrace::Tracee).to receive(:spawn).with(
         "/bin/echo",

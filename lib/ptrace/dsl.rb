@@ -84,7 +84,11 @@ module Ptrace
 
         if fork_like_event?(event)
           child_pid = tracee.event_message
-          child_tracee = tracees.fetch(child_pid) { tracees[child_pid] = Tracee.new(child_pid) }
+          child_tracee = tracees.fetch(child_pid) do
+            created = Tracee.new(child_pid)
+            created.set_options(FOLLOW_CHILD_TRACE_OPTIONS)
+            tracees[child_pid] = created
+          end
           pending_syscalls.delete(child_pid)
           child_tracee.syscall
         end
