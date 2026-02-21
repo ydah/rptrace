@@ -53,6 +53,11 @@ module Ptrace
       write(normalize_updates(name => value))
     end
 
+    # Dynamic register getter/setter (e.g., regs.rax, regs.rax = 1).
+    #
+    # @param name [Symbol]
+    # @param args [Array]
+    # @return [Object]
     def method_missing(name, *args)
       name_str = name.to_s
 
@@ -68,15 +73,20 @@ module Ptrace
       end
     end
 
+    # @param name [Symbol, String]
+    # @param include_private [Boolean]
+    # @return [Boolean]
     def respond_to_missing?(name, include_private = false)
       candidate = name.to_s.delete_suffix("=")
       register_name?(candidate) || super
     end
 
+    # @return [Hash<Symbol, Integer>]
     def to_h
       read
     end
 
+    # @return [String]
     def inspect
       "#<#{self.class} pid=#{@tracee.pid} arch=#{@arch} regs=#{read.inspect}>"
     end

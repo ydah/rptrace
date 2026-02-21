@@ -79,10 +79,19 @@ module Ptrace
       read_bytes
     end
 
+    # Reads one machine word at address.
+    #
+    # @param addr [Integer]
+    # @return [String]
     def [](addr)
       read(addr, WORD_SIZE)
     end
 
+    # Writes one machine word at address.
+    #
+    # @param addr [Integer]
+    # @param value [Integer]
+    # @return [Integer] written byte length
     def []=(addr, value)
       pack_format = WORD_SIZE == 8 ? "Q<" : "L<"
       write(addr, [Integer(value)].pack(pack_format))

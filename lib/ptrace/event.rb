@@ -71,6 +71,7 @@ module Ptrace
       event_code == Constants::PTRACE_EVENT_EXIT
     end
 
+    # @return [String]
     def inspect
       "#<#{self.class} pid=#{pid} status=0x#{raw_status.to_s(16)}>"
     end

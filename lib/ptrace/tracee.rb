@@ -5,7 +5,9 @@ module Ptrace
   class Tracee
     attr_reader :pid, :registers, :memory
 
+    # Default ptrace options set after spawn/attach.
     DEFAULT_TRACE_OPTIONS = Constants::PTRACE_O_TRACESYSGOOD
+    # Register layout used for syscall number/args/return by architecture.
     SYSCALL_REGISTERS = {
       x86_64: {
         number: :orig_rax,

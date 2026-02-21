@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Ptrace
+  # Base error for ptrace operations.
   class Error < StandardError
     attr_reader :errno, :request
 
@@ -16,9 +17,14 @@ module Ptrace
     end
   end
 
+  # Error raised for EPERM.
   class PermissionError < Error; end
+  # Error raised for ESRCH.
   class NoProcessError < Error; end
+  # Error raised for EBUSY.
   class BusyError < Error; end
+  # Error raised for EINVAL.
   class InvalidArgError < Error; end
+  # Unsupported architecture error.
   class UnsupportedArchError < StandardError; end
 end

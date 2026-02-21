@@ -5,6 +5,7 @@ require "fcntl"
 module Ptrace
   # Renderable syscall event (enter/exit).
   class SyscallEvent
+    # Map of errno number to symbolic name (e.g., 2 => "ENOENT").
     ERRNO_NAME_BY_NUMBER = Errno.constants.each_with_object({}) do |const_name, map|
       errno_class = Errno.const_get(const_name)
       next unless errno_class.is_a?(Class) && errno_class < SystemCallError
@@ -14,6 +15,7 @@ module Ptrace
     rescue NameError
       next
     end.freeze
+    # Linux kernel upper bound for -errno syscall return convention.
     LINUX_MAX_ERRNO = 4095
     OPEN_ACCESS_MASK = Fcntl.const_defined?(:O_ACCMODE) ? Fcntl::O_ACCMODE : 0x3
     OPEN_ACCESS_NAMES = {

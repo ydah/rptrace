@@ -4,6 +4,7 @@ require "fiddle"
 require "fiddle/import"
 
 module Ptrace
+  # Low-level libc bindings for ptrace and waitpid.
   module Binding
     extend Fiddle::Importer
     include Constants
@@ -15,6 +16,7 @@ module Ptrace
     extern "int fork()"
     extern "int execvp(char*, void*)"
 
+    # Maps errno values to specific Ptrace error subclasses.
     ERRNO_CLASS_MAP = {
       Errno::EPERM::Errno => PermissionError,
       Errno::ESRCH::Errno => NoProcessError,
@@ -23,6 +25,13 @@ module Ptrace
     }.freeze
 
     class << self
+      # Calls ptrace and raises mapped Ptrace::Error subclasses on failure.
+      #
+      # @param request [Integer, Symbol]
+      # @param pid [Integer]
+      # @param addr [Integer]
+      # @param data [Integer]
+      # @return [Integer]
       def safe_ptrace(request, pid, addr, data)
         clear_errno!
         result = ptrace(request, pid, addr, data)
@@ -32,6 +41,11 @@ module Ptrace
         raise_ptrace_error(errno, request)
       end
 
+      # Calls waitpid and decodes raw status.
+      #
+      # @param pid [Integer]
+      # @param flags [Integer]
+      # @return [Array<(Integer, Integer)>] waited pid and raw status
       def safe_waitpid(pid, flags: 0)
         status_ptr = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT)
 
@@ -45,10 +59,19 @@ module Ptrace
         [waited_pid, status]
       end
 
+      # Resets thread-local errno to zero.
+      #
+      # @return [Integer]
       def clear_errno!
         Fiddle.last_error = 0
       end
 
+      # Raises a mapped Ptrace::Error subclass for an errno code.
+      #
+      # @param errno [Integer]
+      # @param request [Integer, Symbol]
+      # @raise [Ptrace::Error]
+      # @return [void]
       def raise_ptrace_error(errno, request)
         klass = ERRNO_CLASS_MAP.fetch(errno, Error)
         message = SystemCallError.new("ptrace", errno).message

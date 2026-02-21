@@ -2,9 +2,11 @@
 
 module Ptrace
   module SyscallTable
+    # Generates syscall table Ruby files from Linux unistd headers.
     module Generator
       module_function
 
+      # Header lookup and output mapping by architecture.
       ARCH_CONFIG = {
         x86_64: {
           module_name: "X86_64",
@@ -28,12 +30,23 @@ module Ptrace
         }.freeze
       }.freeze
 
+      # Matches numeric __NR_* macro definitions.
       DEFINE_REGEX = /^\s*#\s*define\s+__NR(?:3264)?_([a-zA-Z0-9_]+)\s+([0-9]+)\b/.freeze
 
+      # Generates tables for all configured architectures.
+      #
+      # @param root_dir [String]
+      # @param arches [Array<Symbol>]
+      # @return [Array<Hash>]
       def generate_all(root_dir: Dir.pwd, arches: ARCH_CONFIG.keys)
         arches.map { |arch| generate_for(arch, root_dir: root_dir) }
       end
 
+      # Generates one syscall table file.
+      #
+      # @param arch [Symbol]
+      # @param root_dir [String]
+      # @return [Hash]
       def generate_for(arch, root_dir: Dir.pwd)
         config = ARCH_CONFIG.fetch(arch.to_sym) do
           raise ArgumentError, "unsupported arch: #{arch}"
@@ -53,6 +66,10 @@ module Ptrace
         }
       end
 
+      # Parses #define __NR_* entries from header content.
+      #
+      # @param content [String]
+      # @return [Array<(Integer, Symbol)>]
       def parse_header(content)
         by_number = {}
 
@@ -68,6 +85,11 @@ module Ptrace
         by_number.sort_by { |number, _name| number }
       end
 
+      # Renders a syscall table Ruby source.
+      #
+      # @param module_name [String]
+      # @param entries [Array<(Integer, Symbol)>]
+      # @return [String]
       def render_table(module_name:, entries:)
         table_lines = entries.map do |number, name|
           "        #{number} => Syscall::SyscallInfo.new(number: #{number}, name: :#{name}, arg_names: [], arg_types: [])"

@@ -3,9 +3,21 @@
 module Ptrace
   # Syscall metadata lookup and argument templates.
   module Syscall
+    # Syscall metadata record.
+    #
+    # @!attribute [r] number
+    #   @return [Integer]
+    # @!attribute [r] name
+    #   @return [Symbol]
+    # @!attribute [r] arg_names
+    #   @return [Array<Symbol>]
+    # @!attribute [r] arg_types
+    #   @return [Array<Symbol>]
     SyscallInfo = Struct.new(:number, :name, :arg_names, :arg_types, keyword_init: true)
 
+    # Allowed argument type tags.
     ARG_TYPES = %i[int uint fd ptr str buf size flags mode pid].freeze
+    # Hand-authored argument templates for frequently used syscalls.
     SYSCALL_TEMPLATES = {
       read: [%i[fd buf count], %i[fd buf size]],
       write: [%i[fd buf count], %i[fd buf size]],

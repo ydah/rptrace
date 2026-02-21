@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Ptrace
+  # Linux ptrace and waitpid-related constants.
   module Constants
     NT_PRSTATUS = 1
 
@@ -65,37 +66,54 @@ module Ptrace
     WALL = 0x40000000
   end
 
+  # Helpers mirroring wait status macros from sys/wait.h.
   module WaitStatus
     module_function
 
+    # @param status [Integer]
+    # @return [Boolean]
     def exited?(status)
       (status & 0x7F).zero?
     end
 
+    # @param status [Integer]
+    # @return [Boolean]
     def signaled?(status)
       (((status & 0x7F) + 1) >> 1).positive?
     end
 
+    # @param status [Integer]
+    # @return [Boolean]
     def stopped?(status)
       (status & 0xFF) == 0x7F
     end
 
+    # @param status [Integer]
+    # @return [Boolean]
     def continued?(status)
       status == 0xFFFF
     end
 
+    # @param status [Integer]
+    # @return [Integer]
     def exit_status(status)
       (status >> 8) & 0xFF
     end
 
+    # @param status [Integer]
+    # @return [Integer]
     def term_signal(status)
       status & 0x7F
     end
 
+    # @param status [Integer]
+    # @return [Integer]
     def stop_signal(status)
       (status >> 8) & 0xFF
     end
 
+    # @param status [Integer]
+    # @return [Boolean]
     def core_dumped?(status)
       signaled?(status) && (status & 0x80).positive?
     end

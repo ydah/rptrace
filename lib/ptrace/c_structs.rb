@@ -3,6 +3,7 @@
 require "rbconfig"
 
 module Ptrace
+  # Architecture-specific register layouts and binary helpers.
   module CStructs
     POINTER_SIZE = begin
       [0].pack("J").bytesize
@@ -24,10 +25,13 @@ module Ptrace
 
     module_function
 
+    # @return [Symbol] :x86_64 or :aarch64
     def arch
       @arch ||= detect_arch
     end
 
+    # @param arch [Symbol]
+    # @return [Array<Symbol>]
     def reg_names(arch: self.arch)
       case arch
       when :x86_64 then X86_64_REGS
@@ -37,10 +41,15 @@ module Ptrace
       end
     end
 
+    # @param arch [Symbol]
+    # @return [Integer]
     def regs_size(arch: self.arch)
       reg_names(arch: arch).size * 8
     end
 
+    # @param source [String, Fiddle::Pointer]
+    # @param arch [Symbol]
+    # @return [Hash<Symbol, Integer>]
     def decode_regs(source, arch: self.arch)
       bytes = source.is_a?(String) ? source : source[0, regs_size(arch: arch)]
       values = bytes.unpack("#{PACK_FORMAT}*")
@@ -51,21 +60,31 @@ module Ptrace
       end
     end
 
+    # @param regs [Hash<Symbol, Integer>]
+    # @param arch [Symbol]
+    # @return [String] packed binary register bytes
     def encode_regs(regs, arch: self.arch)
       names = reg_names(arch: arch)
       values = names.map { |name| Integer(regs.fetch(name, 0)) & WORD_MASK }
       values.pack("#{PACK_FORMAT}*")
     end
 
+    # @param base [Integer]
+    # @param length [Integer]
+    # @return [String] packed iovec
     def pack_iovec(base:, length:)
       [Integer(base), Integer(length)].pack("#{POINTER_PACK}#{POINTER_PACK}")
     end
 
+    # @param bytes [String]
+    # @return [Hash<Symbol, Integer>]
     def unpack_iovec(bytes)
       base, length = bytes.unpack("#{POINTER_PACK}#{POINTER_PACK}")
       { base: base, length: length }
     end
 
+    # @return [Symbol]
+    # @raise [Ptrace::UnsupportedArchError]
     def detect_arch
       host_cpu = RbConfig::CONFIG.fetch("host_cpu", "")
 
