@@ -22,6 +22,13 @@ RSpec.describe Ptrace::WaitStatus do
     expect(described_class.term_signal(status)).to eq(9)
   end
 
+  it "does not treat stopped status as signaled" do
+    status = 0x857F
+
+    expect(described_class.stopped?(status)).to be(true)
+    expect(described_class.signaled?(status)).to be(false)
+  end
+
   it "detects continued state" do
     expect(described_class.continued?(0xFFFF)).to be(true)
   end

@@ -18,6 +18,12 @@ RSpec.describe Ptrace::Tracee do
     skip "ptrace permission required: #{e.message}"
   end
 
+  def safe_detach(tracee)
+    tracee&.detach
+  rescue Ptrace::Error, Errno::ESRCH
+    nil
+  end
+
   before do
     ensure_integration_environment!
   end
@@ -34,7 +40,7 @@ RSpec.describe Ptrace::Tracee do
       expect(event.exit_status).to eq(0)
     end
   ensure
-    tracee&.detach
+    safe_detach(tracee)
   end
 
   it "spawns and traces /bin/echo with arguments" do
@@ -49,7 +55,7 @@ RSpec.describe Ptrace::Tracee do
       expect(event.exit_status).to eq(0)
     end
   ensure
-    tracee&.detach
+    safe_detach(tracee)
   end
 
   it "can read registers and process memory while stopped" do
@@ -75,7 +81,7 @@ RSpec.describe Ptrace::Tracee do
       expect(event.exited?).to be(true)
     end
   ensure
-    tracee&.detach
+    safe_detach(tracee)
   end
 
   it "steps over a software breakpoint on x86_64" do
@@ -104,7 +110,7 @@ RSpec.describe Ptrace::Tracee do
       end
     end
   ensure
-    tracee&.detach
+    safe_detach(tracee)
   end
 
   it "reports syscall stops with PTRACE_SYSCALL" do
@@ -128,7 +134,7 @@ RSpec.describe Ptrace::Tracee do
       expect(seen_syscall_stop).to be(true)
     end
   ensure
-    tracee&.detach
+    safe_detach(tracee)
   end
 
   it "attaches and detaches from a running process" do
@@ -144,11 +150,7 @@ RSpec.describe Ptrace::Tracee do
       expect { Process.kill(0, child_pid) }.not_to raise_error
     end
   ensure
-    begin
-      tracee&.detach
-    rescue Ptrace::Error, Errno::ESRCH
-      nil
-    end
+    safe_detach(tracee)
 
     begin
       Process.kill("KILL", child_pid) if child_pid
@@ -177,11 +179,7 @@ RSpec.describe Ptrace::Tracee do
       expect(event.exited?).to be(false)
     end
   ensure
-    begin
-      tracee&.detach
-    rescue Ptrace::Error, Errno::ESRCH
-      nil
-    end
+    safe_detach(tracee)
 
     begin
       Process.kill("KILL", child_pid) if child_pid

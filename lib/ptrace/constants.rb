@@ -85,7 +85,8 @@ module Ptrace
     # @param status [Integer]
     # @return [Boolean]
     def signaled?(status)
-      (((status & 0x7F) + 1) >> 1).positive?
+      signal = status & 0x7F
+      !signal.zero? && signal != 0x7F
     end
 
     # @param status [Integer]
