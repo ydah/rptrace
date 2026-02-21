@@ -301,6 +301,28 @@ module Ptrace
       breakpoint_store[Integer(address)]
     end
 
+    # Returns true when instruction pointer is currently on a known software breakpoint trap.
+    #
+    # @param arch [Symbol]
+    # @return [Boolean]
+    def breakpoint_hit?(arch: CStructs.arch)
+      !!current_breakpoint(arch: arch)
+    end
+
+    # Returns current breakpoint at instruction pointer trap site.
+    #
+    # @param arch [Symbol]
+    # @return [Ptrace::Breakpoint, nil]
+    def current_breakpoint(arch: CStructs.arch)
+      return nil unless arch.to_sym == :x86_64
+
+      ip_reg = instruction_pointer_register(arch)
+      ip = Integer(registers[ip_reg])
+      return nil if ip <= 0
+
+      breakpoint_store[ip - 1]
+    end
+
     # Installs an x86_64 INT3 software breakpoint.
     #
     # @param address [Integer]
@@ -344,6 +366,29 @@ module Ptrace
       count
     end
 
+    # Executes one instruction over the currently hit software breakpoint and reinstalls it.
+    #
+    # @param signal [Integer] signal to inject during single-step
+    # @param arch [Symbol]
+    # @param wait_flags [Integer]
+    # @return [Ptrace::Event]
+    # @raise [Ptrace::Error]
+    # @raise [Ptrace::UnsupportedArchError]
+    def step_over_breakpoint(signal: 0, arch: CStructs.arch, wait_flags: Constants::WALL)
+      ensure_breakpoint_supported_arch!
+      breakpoint = current_breakpoint(arch: arch)
+      raise Error, "no active breakpoint at current instruction pointer" unless breakpoint
+
+      ip_reg = instruction_pointer_register(arch)
+      address = breakpoint.address
+      memory.write(address, breakpoint.original_byte)
+      registers.write(ip_reg => address)
+      singlestep(signal: signal)
+      event = wait(flags: wait_flags)
+      memory.write(address, BREAKPOINT_OPCODE) if breakpoint.enabled?
+      event
+    end
+
     private
 
     def request(request, signal)
@@ -365,6 +410,15 @@ module Ptrace
       return if arch == :x86_64
 
       raise UnsupportedArchError, "software breakpoints are supported only on x86_64 (got #{arch})"
+    end
+
+    def instruction_pointer_register(arch)
+      case arch.to_sym
+      when :x86_64 then :rip
+      when :aarch64 then :pc
+      else
+        raise UnsupportedArchError, "unsupported instruction pointer register for #{arch}"
+      end
     end
 
     def decode_seccomp_metadata_flags(flags)

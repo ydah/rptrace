@@ -78,6 +78,35 @@ RSpec.describe Ptrace::Tracee do
     tracee&.detach
   end
 
+  it "steps over a software breakpoint on x86_64" do
+    tracee = nil
+
+    with_ptrace_permission do
+      skip "software breakpoint integration is x86_64-only" unless Ptrace::CStructs.arch == :x86_64
+
+      tracee = described_class.spawn("/bin/true")
+      rip = tracee.registers[:rip]
+      tracee.set_breakpoint(rip)
+      tracee.cont
+
+      trap_event = tracee.wait(flags: Ptrace::Constants::WALL)
+      expect(trap_event.stopped?).to be(true)
+      expect(tracee.breakpoint_hit?).to be(true)
+
+      stepped_event = tracee.step_over_breakpoint
+      expect(stepped_event.stopped? || stepped_event.exited? || stepped_event.signaled?).to be(true)
+      expect(tracee.breakpoint(rip)).not_to be_nil
+
+      unless stepped_event.exited? || stepped_event.signaled?
+        tracee.cont
+        exit_event = tracee.wait(flags: Ptrace::Constants::WALL)
+        expect(exit_event.exited? || exit_event.signaled?).to be(true)
+      end
+    end
+  ensure
+    tracee&.detach
+  end
+
   it "reports syscall stops with PTRACE_SYSCALL" do
     tracee = nil
 
