@@ -94,4 +94,66 @@ RSpec.describe Ptrace::SyscallTable::Generator do
       end
     end
   end
+
+  describe ".generate_all" do
+    it "skips missing headers when skip_missing is true" do
+      Dir.mktmpdir do |tmpdir|
+        root_dir = File.join(tmpdir, "project")
+        FileUtils.mkdir_p(File.join(root_dir, "lib/ptrace/syscall_table"))
+        x86_header = File.join(tmpdir, "x86.h")
+        File.write(x86_header, "#define __NR_read 0\n")
+
+        old_x86 = ENV["PTRACE_SYSCALL_HEADER_X86_64"]
+        old_arm = ENV["PTRACE_SYSCALL_HEADER_AARCH64"]
+        ENV["PTRACE_SYSCALL_HEADER_X86_64"] = x86_header
+        ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = File.join(tmpdir, "missing-arm.h")
+
+        results = described_class.generate_all(
+          root_dir: root_dir,
+          arches: %i[x86_64 aarch64],
+          skip_missing: true
+        )
+
+        expect(results.map { |r| r[:arch] }).to eq([:x86_64])
+      ensure
+        ENV["PTRACE_SYSCALL_HEADER_X86_64"] = old_x86
+        ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = old_arm
+      end
+    end
+
+    it "raises when headers are missing and skip_missing is false" do
+      old_arm = ENV["PTRACE_SYSCALL_HEADER_AARCH64"]
+      ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = "/tmp/nope-arm.h"
+
+      expect do
+        described_class.generate_all(arches: [:aarch64], skip_missing: false)
+      end.to raise_error(Ptrace::SyscallTable::Generator::HeaderNotFoundError)
+    ensure
+      ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = old_arm
+    end
+  end
+
+  describe ".generate_available" do
+    it "returns generated and skipped collections" do
+      Dir.mktmpdir do |tmpdir|
+        root_dir = File.join(tmpdir, "project")
+        FileUtils.mkdir_p(File.join(root_dir, "lib/ptrace/syscall_table"))
+        x86_header = File.join(tmpdir, "x86.h")
+        File.write(x86_header, "#define __NR_read 0\n")
+
+        old_x86 = ENV["PTRACE_SYSCALL_HEADER_X86_64"]
+        old_arm = ENV["PTRACE_SYSCALL_HEADER_AARCH64"]
+        ENV["PTRACE_SYSCALL_HEADER_X86_64"] = x86_header
+        ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = File.join(tmpdir, "missing-arm.h")
+
+        output = described_class.generate_available(root_dir: root_dir, arches: %i[x86_64 aarch64])
+
+        expect(output[:generated].map { |r| r[:arch] }).to eq([:x86_64])
+        expect(output[:skipped].map { |s| s[:arch] }).to eq([:aarch64])
+      ensure
+        ENV["PTRACE_SYSCALL_HEADER_X86_64"] = old_x86
+        ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = old_arm
+      end
+    end
+  end
 end

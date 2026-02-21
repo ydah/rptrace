@@ -85,6 +85,11 @@ You can override header paths with:
 - `PTRACE_SYSCALL_HEADER_X86_64`
 - `PTRACE_SYSCALL_HEADER_AARCH64`
 
+Optional task controls:
+
+- `ARCH=x86_64` (or `ARCH=x86_64,aarch64`) to limit architectures
+- `STRICT=1` to fail if any requested architecture header is missing
+
 Generate YARD documentation:
 
 ```bash

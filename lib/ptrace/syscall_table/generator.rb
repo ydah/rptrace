@@ -4,6 +4,9 @@ module Ptrace
   module SyscallTable
     # Generates syscall table Ruby files from Linux unistd headers.
     module Generator
+      # Raised when syscall header cannot be resolved for an architecture.
+      class HeaderNotFoundError < ArgumentError; end
+
       module_function
 
       # Header lookup and output mapping by architecture.
@@ -37,9 +40,40 @@ module Ptrace
       #
       # @param root_dir [String]
       # @param arches [Array<Symbol>]
+      # @param skip_missing [Boolean] skip architectures without headers
       # @return [Array<Hash>]
-      def generate_all(root_dir: Dir.pwd, arches: ARCH_CONFIG.keys)
-        arches.map { |arch| generate_for(arch, root_dir: root_dir) }
+      def generate_all(root_dir: Dir.pwd, arches: ARCH_CONFIG.keys, skip_missing: false)
+        generated = []
+
+        arches.each do |arch|
+          begin
+            generated << generate_for(arch, root_dir: root_dir)
+          rescue HeaderNotFoundError
+            raise unless skip_missing
+          end
+        end
+
+        generated
+      end
+
+      # Generates tables and reports skipped architectures.
+      #
+      # @param root_dir [String]
+      # @param arches [Array<Symbol>]
+      # @return [Hash]
+      def generate_available(root_dir: Dir.pwd, arches: ARCH_CONFIG.keys)
+        generated = []
+        skipped = []
+
+        arches.each do |arch|
+          begin
+            generated << generate_for(arch, root_dir: root_dir)
+          rescue HeaderNotFoundError => e
+            skipped << { arch: arch.to_sym, reason: e.message }
+          end
+        end
+
+        { generated: generated, skipped: skipped }
       end
 
       # Generates one syscall table file.
@@ -122,7 +156,7 @@ module Ptrace
           expanded = File.expand_path(env_value)
           return expanded if File.file?(expanded)
 
-          raise ArgumentError, "header path from #{env_key} does not exist: #{expanded}"
+          raise HeaderNotFoundError, "header path from #{env_key} does not exist: #{expanded}"
         end
 
         config.fetch(:header_candidates).each do |candidate|
@@ -130,7 +164,7 @@ module Ptrace
           return expanded if File.file?(expanded)
         end
 
-        raise ArgumentError, "no syscall header found. set #{env_key}=<path-to-header>"
+        raise HeaderNotFoundError, "no syscall header found. set #{env_key}=<path-to-header>"
       end
       private_class_method :resolve_header_path
     end
