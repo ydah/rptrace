@@ -74,6 +74,40 @@ module Ptrace
 
       map[value] ||= const_name.to_s
     end.freeze
+    # Mapping of clone(2) flag bits in the upper bits of clone flags argument.
+    CLONE_FLAG_NAMES = {
+      0x0000_0100 => "CLONE_VM",
+      0x0000_0200 => "CLONE_FS",
+      0x0000_0400 => "CLONE_FILES",
+      0x0000_0800 => "CLONE_SIGHAND",
+      0x0000_1000 => "CLONE_PIDFD",
+      0x0000_2000 => "CLONE_PTRACE",
+      0x0000_4000 => "CLONE_VFORK",
+      0x0000_8000 => "CLONE_PARENT",
+      0x0001_0000 => "CLONE_THREAD",
+      0x0002_0000 => "CLONE_NEWNS",
+      0x0004_0000 => "CLONE_SYSVSEM",
+      0x0008_0000 => "CLONE_SETTLS",
+      0x0010_0000 => "CLONE_PARENT_SETTID",
+      0x0020_0000 => "CLONE_CHILD_CLEARTID",
+      0x0040_0000 => "CLONE_DETACHED",
+      0x0080_0000 => "CLONE_UNTRACED",
+      0x0100_0000 => "CLONE_CHILD_SETTID",
+      0x0200_0000 => "CLONE_NEWCGROUP",
+      0x0400_0000 => "CLONE_NEWUTS",
+      0x0800_0000 => "CLONE_NEWIPC",
+      0x1000_0000 => "CLONE_NEWUSER",
+      0x2000_0000 => "CLONE_NEWPID",
+      0x4000_0000 => "CLONE_NEWNET",
+      0x8000_0000 => "CLONE_IO"
+    }.freeze
+    # Mapping of wait4(2) option bits.
+    WAIT_OPTION_NAMES = {
+      Constants::WNOHANG => "WNOHANG",
+      Constants::WUNTRACED => "WUNTRACED",
+      Constants::WCONTINUED => "WCONTINUED",
+      Constants::WALL => "__WALL"
+    }.freeze
 
     attr_reader :tracee, :syscall, :args, :return_value, :phase
 
@@ -164,6 +198,10 @@ module Ptrace
         decode_mmap_prot(number)
       elsif mmap_flags_argument?(index)
         decode_mmap_flags(number)
+      elsif clone_flags_argument?(index)
+        decode_clone_flags(number)
+      elsif wait_options_argument?(index)
+        decode_wait_options(number)
       else
         format("0x%x", number)
       end
@@ -193,6 +231,18 @@ module Ptrace
       return false unless syscall.name == :mmap
 
       syscall.arg_names.fetch(index, nil) == :flags
+    end
+
+    def clone_flags_argument?(index)
+      return false unless syscall.name == :clone
+
+      syscall.arg_names.fetch(index, nil) == :flags
+    end
+
+    def wait_options_argument?(index)
+      return false unless syscall.name == :wait4
+
+      syscall.arg_names.fetch(index, nil) == :options
     end
 
     def decode_open_flags(value)
@@ -245,6 +295,46 @@ module Ptrace
         next unless (remaining & bit) == bit
 
         names << MAP_FLAG_NAMES.fetch(bit)
+        remaining &= ~bit
+      end
+
+      names << format("0x%x", remaining) unless remaining.zero?
+      names.empty? ? format("0x%x", value) : names.join("|")
+    end
+
+    def decode_clone_flags(value)
+      names = []
+      exit_signal = value & 0xFF
+      remaining = value & ~0xFF
+
+      CLONE_FLAG_NAMES.keys.sort.each do |bit|
+        next unless (remaining & bit) == bit
+
+        names << CLONE_FLAG_NAMES.fetch(bit)
+        remaining &= ~bit
+      end
+
+      names << format_clone_exit_signal(exit_signal) unless exit_signal.zero?
+      names << format("0x%x", remaining) unless remaining.zero?
+      names.empty? ? "0" : names.join("|")
+    end
+
+    def format_clone_exit_signal(signal)
+      signal_name = Signal.signame(signal)
+      signal_name.start_with?("SIG") ? signal_name : "SIG#{signal_name}"
+    rescue ArgumentError
+      signal.to_s
+    end
+
+    def decode_wait_options(value)
+      return "0" if value.zero?
+
+      names = []
+      remaining = value
+      WAIT_OPTION_NAMES.keys.sort.each do |bit|
+        next unless (remaining & bit) == bit
+
+        names << WAIT_OPTION_NAMES.fetch(bit)
         remaining &= ~bit
       end
 

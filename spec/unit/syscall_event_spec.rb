@@ -154,5 +154,61 @@ RSpec.describe Ptrace::SyscallEvent do
       expect(rendered).to include("0x40")
       expect(rendered).to include("0x80")
     end
+
+    it "decodes clone flags and exit signal names" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(
+        number: 56,
+        name: :clone,
+        arg_names: %i[flags child_stack ptid ctid newtls],
+        arg_types: %i[flags ptr ptr ptr ptr]
+      )
+      event = described_class.new(
+        tracee: tracee,
+        syscall: syscall,
+        args: [0x0001_0000 | 0x0000_0100 | Signal.list.fetch("CHLD"), 0, 0, 0, 0],
+        phase: :enter
+      )
+
+      rendered = event.to_s
+      expect(rendered).to include("CLONE_THREAD")
+      expect(rendered).to include("CLONE_VM")
+      expect(rendered).to include("SIGCHLD")
+    end
+
+    it "shows unknown clone flag bits as hex residue" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(
+        number: 56,
+        name: :clone,
+        arg_names: %i[flags child_stack ptid ctid newtls],
+        arg_types: %i[flags ptr ptr ptr ptr]
+      )
+      event = described_class.new(
+        tracee: tracee,
+        syscall: syscall,
+        args: [0x1_0000_0000, 0, 0, 0, 0],
+        phase: :enter
+      )
+
+      expect(event.to_s).to include("0x100000000")
+    end
+
+    it "decodes wait4 option flags" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(
+        number: 61,
+        name: :wait4,
+        arg_names: %i[pid stat_addr options rusage],
+        arg_types: %i[pid ptr flags ptr]
+      )
+      event = described_class.new(
+        tracee: tracee,
+        syscall: syscall,
+        args: [1234, 0, Ptrace::Constants::WNOHANG | Ptrace::Constants::WUNTRACED, 0],
+        phase: :enter
+      )
+
+      rendered = event.to_s
+      expect(rendered).to include("WNOHANG")
+      expect(rendered).to include("WUNTRACED")
+    end
   end
 end
