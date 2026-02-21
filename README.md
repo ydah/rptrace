@@ -104,6 +104,13 @@ Integration specs are opt-in and require:
 PTRACE_RUN_INTEGRATION=1 bundle exec rspec spec/integration
 ```
 
+You can inspect local ptrace capability setup from Ruby:
+
+```ruby
+diagnostics = Ptrace.ptrace_permissions
+puts diagnostics # => { ptrace_privileged:, cap_sys_ptrace:, yama_ptrace_scope:, hints: [...] }
+```
+
 ## Examples
 
 - `examples/simple_strace.rb`
