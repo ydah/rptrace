@@ -1,15 +1,14 @@
 # ptrace-ruby
 
-`ptrace-ruby` is an in-progress Ruby gem that wraps Linux `ptrace(2)` with a Ruby-friendly API.
+`ptrace-ruby` is a Ruby wrapper for Linux `ptrace(2)` focused on building tracers and debugger-like tooling with a Ruby-friendly API.
 
-## Status
+## Features
 
-Initial scaffolding is in place:
-
-- top-level namespace: `Ptrace` (no `Ptrace::Ruby` nesting)
-- low-level constants and FFI binding entry points
-- basic process/event model skeleton (`Tracee`, `Event`, `SyscallEvent`)
-- initial syscall metadata tables for `x86_64` and `aarch64`
+- Top-level namespace is `Ptrace` (no `Ptrace::Ruby` nesting)
+- `Tracee` API for `spawn`, `attach`, `cont`, `syscall`, `detach`, and `wait`
+- Register and memory wrappers (`Registers`, `Memory`)
+- Syscall lookup (`Ptrace::Syscall`) for `x86_64`/`aarch64`
+- High-level tracing helper `Ptrace.strace`
 
 ## Installation
 
@@ -25,21 +24,43 @@ And then execute:
 bundle install
 ```
 
-## Usage (WIP)
+## Quick Start
 
 ```ruby
 require "ptrace"
 
-Ptrace.strace("/bin/echo", "hello") do |event|
+Ptrace.strace("/bin/ls", "-la", "/tmp") do |event|
   next unless event.exit?
+
   puts event
 end
 ```
 
+## Examples
+
+- `examples/simple_strace.rb`
+- `examples/syscall_counter.rb`
+- `examples/file_access_tracer.rb`
+- `examples/memory_reader.rb`
+
 ## Platform
 
-- Linux only (intended target)
+- Linux only
 - Ruby 3.1+
+
+## Permissions
+
+`ptrace` requires privilege on Linux:
+
+- run as `root`, or
+- run with `CAP_SYS_PTRACE`, and
+- ensure Yama policy allows tracing (`/proc/sys/kernel/yama/ptrace_scope`)
+
+Integration specs are opt-in and require:
+
+```bash
+PTRACE_RUN_INTEGRATION=1 bundle exec rspec spec/integration
+```
 
 ## Development
 
@@ -47,11 +68,16 @@ end
 bundle exec rspec
 ```
 
-Generate syscall tables from Linux headers:
+Generate syscall tables from Linux headers (`x86_64` / `aarch64`):
 
 ```bash
 bundle exec rake syscall:generate
 ```
+
+You can override header paths with:
+
+- `PTRACE_SYSCALL_HEADER_X86_64`
+- `PTRACE_SYSCALL_HEADER_AARCH64`
 
 ## License
 

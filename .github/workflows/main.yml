@@ -1,20 +1,17 @@
-name: Ruby
+name: Tests
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [main]
   pull_request:
 
 jobs:
-  build:
+  unit:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: Unit (Ruby ${{ matrix.ruby }})
     strategy:
       matrix:
-        ruby:
-          - '4.0'
+        ruby: ["3.2", "3.3", "4.0"]
 
     steps:
       - uses: actions/checkout@v4
@@ -25,5 +22,24 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
-        run: bundle exec rake
+      - name: Run unit specs
+        run: bundle exec rspec spec/unit spec/ptrace_spec.rb
+
+  integration:
+    runs-on: ubuntu-latest
+    name: Integration (Ruby 3.3)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Relax ptrace Yama policy
+        run: sudo sysctl kernel.yama.ptrace_scope=0
+      - name: Run integration specs
+        env:
+          PTRACE_RUN_INTEGRATION: "1"
+        run: bundle exec rspec spec/integration
