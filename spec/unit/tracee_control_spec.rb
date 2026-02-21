@@ -85,6 +85,16 @@ RSpec.describe Ptrace::Tracee do
   end
 
   describe "class controls" do
+    it "waits any traced task and wraps result in Event" do
+      allow(Ptrace::Binding).to receive(:safe_waitpid).with(-1, flags: 7).and_return([5555, 0x2A00])
+
+      event = described_class.wait_any(flags: 7)
+
+      expect(event).to be_a(Ptrace::Event)
+      expect(event.pid).to eq(5555)
+      expect(event.raw_status).to eq(0x2A00)
+    end
+
     it "spawns tracee and sets default options" do
       event = instance_double(Ptrace::Event, stopped?: true)
       tracee = instance_double(described_class)

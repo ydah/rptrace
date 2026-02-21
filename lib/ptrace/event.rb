@@ -74,6 +74,14 @@ module Ptrace
       event_code == Constants::PTRACE_EVENT_CLONE
     end
 
+    def vfork_event?
+      event_code == Constants::PTRACE_EVENT_VFORK
+    end
+
+    def vfork_done_event?
+      event_code == Constants::PTRACE_EVENT_VFORK_DONE
+    end
+
     def exec_event?
       event_code == Constants::PTRACE_EVENT_EXEC
     end

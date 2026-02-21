@@ -28,7 +28,20 @@ RSpec.describe Ptrace::Event do
       expect(event.exec_event?).to be(true)
       expect(event.fork_event?).to be(false)
       expect(event.clone_event?).to be(false)
+      expect(event.vfork_event?).to be(false)
+      expect(event.vfork_done_event?).to be(false)
       expect(event.exit_event?).to be(false)
+    end
+
+    it "detects vfork and vfork_done event codes" do
+      vfork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_VFORK << 16)
+      vfork_done_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_VFORK_DONE << 16)
+
+      vfork_event = described_class.new(301, vfork_status)
+      vfork_done_event = described_class.new(302, vfork_done_status)
+
+      expect(vfork_event.vfork_event?).to be(true)
+      expect(vfork_done_event.vfork_done_event?).to be(true)
     end
 
     it "detects continued state" do

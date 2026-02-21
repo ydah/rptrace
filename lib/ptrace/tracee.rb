@@ -77,6 +77,15 @@ module Ptrace
       new(pid)
     end
 
+    # Waits for any traced process/thread state change.
+    #
+    # @param flags [Integer] waitpid flags
+    # @return [Ptrace::Event]
+    def self.wait_any(flags: 0)
+      waited_pid, status = Binding.safe_waitpid(-1, flags: flags)
+      Event.new(waited_pid, status)
+    end
+
     # Continue process execution.
     #
     # @param signal [Integer] signal number to inject
