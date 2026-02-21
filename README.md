@@ -163,6 +163,12 @@ Generate YARD documentation:
 bundle exec yard doc
 ```
 
+## Release
+
+- CI release workflow: `.github/workflows/release.yml`
+- Trigger by pushing a tag (example: `v0.1.0`) or via `workflow_dispatch`
+- Set repository secret `RUBYGEMS_API_KEY` to enable `gem push`
+
 ## Limitations
 
 - Linux only
