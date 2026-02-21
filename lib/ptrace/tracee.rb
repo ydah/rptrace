@@ -171,6 +171,15 @@ module Ptrace
       ProcMaps.read(pid)
     end
 
+    # Reads ptrace event message (e.g., child pid for fork/clone events).
+    #
+    # @return [Integer]
+    def event_message
+      buffer = Fiddle::Pointer.malloc(Fiddle::SIZEOF_VOIDP)
+      Binding.safe_ptrace(Constants::PTRACE_GETEVENTMSG, pid, 0, buffer.to_i)
+      buffer[0, Fiddle::SIZEOF_VOIDP].unpack1("J")
+    end
+
     # Returns active software breakpoints.
     #
     # @return [Array<Ptrace::Breakpoint>]

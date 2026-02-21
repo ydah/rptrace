@@ -68,6 +68,20 @@ RSpec.describe Ptrace::Tracee do
 
       expect(tracee.memory_maps).to eq(maps)
     end
+
+    it "reads ptrace event message via GETEVENTMSG" do
+      expected = 123_456
+      allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, pid, addr, data|
+        expect(request).to eq(Ptrace::Constants::PTRACE_GETEVENTMSG)
+        expect(pid).to eq(4321)
+        expect(addr).to eq(0)
+        pointer = Fiddle::Pointer.new(data)
+        pointer[0, Fiddle::SIZEOF_VOIDP] = [expected].pack("J")
+        0
+      end
+
+      expect(tracee.event_message).to eq(expected)
+    end
   end
 
   describe "class controls" do
