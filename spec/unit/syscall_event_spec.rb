@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "fcntl"
+
 RSpec.describe Ptrace::SyscallEvent do
   let(:memory) { instance_double(Ptrace::Memory) }
   let(:tracee) { instance_double(Ptrace::Tracee, memory: memory) }
@@ -17,11 +19,15 @@ RSpec.describe Ptrace::SyscallEvent do
       event = described_class.new(
         tracee: tracee,
         syscall: syscall,
-        args: [-100, 0x1000, 0x241, 0o644],
+        args: [-100, 0x1000, Fcntl::O_WRONLY | Fcntl::O_CREAT, 0o644],
         phase: :enter
       )
 
-      expect(event.to_s).to eq("openat(-100, \"/tmp/file\", 0x241, 420) ...")
+      rendered = event.to_s
+      expect(rendered).to include("openat(-100, \"/tmp/file\",")
+      expect(rendered).to include("O_WRONLY")
+      expect(rendered).to include("O_CREAT")
+      expect(rendered).to end_with(", 0644) ...")
     end
 
     it "formats syscall errors like strace" do
@@ -41,7 +47,7 @@ RSpec.describe Ptrace::SyscallEvent do
         return_value: -Errno::ENOENT::Errno
       )
 
-      expect(event.to_s).to eq("open(\"/does/not/exist\", 0x0, 0) = -1 ENOENT (No such file or directory)")
+      expect(event.to_s).to eq("open(\"/does/not/exist\", O_RDONLY, 0) = -1 ENOENT (No such file or directory)")
     end
 
     it "falls back to pointer output when reading string fails" do
@@ -82,6 +88,18 @@ RSpec.describe Ptrace::SyscallEvent do
       event = described_class.new(tracee: tracee, syscall: syscall, args: [%w[a b]], phase: :enter)
 
       expect(event.to_s).to eq("custom([\"a\", \"b\"]) ...")
+    end
+
+    it "keeps non-open flags as hex" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(
+        number: 16,
+        name: :ioctl,
+        arg_names: %i[fd request argp],
+        arg_types: %i[fd flags ptr]
+      )
+      event = described_class.new(tracee: tracee, syscall: syscall, args: [3, 0x1234, 0], phase: :enter)
+
+      expect(event.to_s).to eq("ioctl(3, 0x1234, NULL) ...")
     end
   end
 end
