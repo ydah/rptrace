@@ -47,6 +47,12 @@ end
 bundle exec rspec
 ```
 
+Generate syscall tables from Linux headers:
+
+```bash
+bundle exec rake syscall:generate
+```
+
 ## License
 
 MIT
