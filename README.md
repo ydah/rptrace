@@ -18,7 +18,7 @@ Linux `ptrace(2)` is powerful but low-level. This gem wraps process control, reg
 - `/proc/<pid>/maps` parser (`ProcMaps`, `Tracee#memory_maps`)
 - Software breakpoints on x86_64 (`Tracee#set_breakpoint`, `remove_breakpoint`)
 - Syscall lookup (`Ptrace::Syscall`) for `x86_64`/`aarch64`
-- High-level tracing helper `Ptrace.strace` (`follow_children` supported)
+- High-level tracing helper `Ptrace.strace` (`follow_children` / `yield_seccomp` supported)
 - ptrace event helpers (`Tracee#event_message`, `Tracee#seccomp_data`, `Tracee#seccomp_metadata`, `Tracee#seccomp_filter`)
 
 ## Installation
@@ -53,6 +53,19 @@ Follow child processes/threads (clone/fork/vfork):
 Ptrace.strace("/usr/bin/ruby", "-e", "pid = fork { sleep 0.1 }; Process.wait(pid)", follow_children: true) do |event|
   next unless event.enter?
   puts "pid=#{event.tracee.pid} #{event.syscall.name}"
+end
+```
+
+Include seccomp stop events in trace stream:
+
+```ruby
+Ptrace.strace("/bin/ls", "/tmp", yield_seccomp: true) do |event|
+  case event
+  when Ptrace::SyscallEvent
+    puts event if event.exit?
+  when Ptrace::SeccompEvent
+    warn event.to_s
+  end
 end
 ```
 
