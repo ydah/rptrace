@@ -23,6 +23,7 @@ module Ptrace
       Errno::EBUSY::Errno => BusyError,
       Errno::EINVAL::Errno => InvalidArgError
     }.freeze
+    PERMISSION_HINT = "try running as root, granting CAP_SYS_PTRACE, and checking /proc/sys/kernel/yama/ptrace_scope".freeze
 
     class << self
       # Calls ptrace and raises mapped Ptrace::Error subclasses on failure.
@@ -75,6 +76,7 @@ module Ptrace
       def raise_ptrace_error(errno, request)
         klass = ERRNO_CLASS_MAP.fetch(errno, Error)
         message = SystemCallError.new("ptrace", errno).message
+        message = "#{message}; #{PERMISSION_HINT}" if klass == PermissionError
         raise klass.new(message, errno: errno, request: request)
       end
     end

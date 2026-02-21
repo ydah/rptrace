@@ -21,7 +21,18 @@ RSpec.describe Ptrace::Binding do
 
       expect do
         described_class.safe_ptrace(:attach, 1, 0, 0)
-      end.to raise_error(Ptrace::PermissionError)
+      end.to raise_error(Ptrace::PermissionError, /CAP_SYS_PTRACE/)
+    end
+
+    it "includes Yama guidance in PermissionError messages" do
+      allow(described_class).to receive(:ptrace) do
+        Fiddle.last_error = Errno::EPERM::Errno
+        -1
+      end
+
+      expect do
+        described_class.safe_ptrace(:attach, 1, 0, 0)
+      end.to raise_error(Ptrace::PermissionError, /ptrace_scope/)
     end
 
     it "maps unknown errno to generic Error" do
