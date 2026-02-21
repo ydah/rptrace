@@ -3,18 +3,26 @@
 require "fiddle"
 
 module Ptrace
+  # Register accessor for a tracee process.
   class Registers
     def initialize(tracee, arch: CStructs.arch)
       @tracee = tracee
       @arch = arch.to_sym
     end
 
+    # Reads all registers from kernel and returns a hash.
+    #
+    # @return [Hash<Symbol, Integer>]
     def read
       buffer = Fiddle::Pointer.malloc(CStructs.regs_size(arch: @arch))
       request_read(buffer)
       CStructs.decode_regs(buffer, arch: @arch)
     end
 
+    # Updates one or more register values.
+    #
+    # @param values [Hash<Symbol, Integer>]
+    # @return [Hash<Symbol, Integer>] merged register map
     def write(values)
       updates = normalize_updates(values)
       current = read
@@ -27,11 +35,20 @@ module Ptrace
       merged
     end
 
+    # Reads a single register value.
+    #
+    # @param name [Symbol, String]
+    # @return [Integer]
     def [](name)
       key = normalize_reg_name(name)
       read.fetch(key)
     end
 
+    # Writes a single register value.
+    #
+    # @param name [Symbol, String]
+    # @param value [Integer]
+    # @return [Hash<Symbol, Integer>] merged register map
     def []=(name, value)
       write(normalize_updates(name => value))
     end

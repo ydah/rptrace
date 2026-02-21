@@ -2,6 +2,12 @@
 
 module Ptrace
   class << self
+    # Spawns and traces a command for the duration of the block.
+    #
+    # @param command [String] executable path or command name
+    # @param args [Array<String>] command arguments
+    # @yieldparam tracee [Ptrace::Tracee]
+    # @return [Object] block return value
     def trace(command, *args)
       tracee = Tracee.spawn(command, *args)
       yield tracee
@@ -13,6 +19,12 @@ module Ptrace
       end
     end
 
+    # Runs a command and yields syscall enter/exit events.
+    #
+    # @param command [String] executable path or command name
+    # @param args [Array<String>] command arguments
+    # @yieldparam event [Ptrace::SyscallEvent]
+    # @return [void]
     def strace(command, *args)
       trace(command, *args) do |tracee|
         loop do

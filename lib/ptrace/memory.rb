@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Ptrace
+  # Memory accessor for traced process address space.
   class Memory
     WORD_SIZE = begin
       [0].pack("J").bytesize
@@ -12,6 +13,11 @@ module Ptrace
       @tracee = tracee
     end
 
+    # Reads bytes from tracee memory.
+    #
+    # @param addr [Integer] start address
+    # @param length [Integer] byte length
+    # @return [String] binary string
     def read(addr, length)
       address = Integer(addr)
       size = Integer(length)
@@ -30,6 +36,11 @@ module Ptrace
       buffer.byteslice(offset, size)
     end
 
+    # Writes bytes into tracee memory.
+    #
+    # @param addr [Integer] start address
+    # @param bytes [String] binary/string data
+    # @return [Integer] written byte length
     def write(addr, bytes)
       address = Integer(addr)
       data = bytes.to_s.b
@@ -52,6 +63,11 @@ module Ptrace
       data.bytesize
     end
 
+    # Reads a NUL-terminated string from tracee memory.
+    #
+    # @param addr [Integer] start address
+    # @param max [Integer] max bytes to scan
+    # @return [String] decoded bytes up to NUL or max
     def read_string(addr, max: 4096)
       limit = Integer(max)
       raise ArgumentError, "max must be positive" if limit <= 0

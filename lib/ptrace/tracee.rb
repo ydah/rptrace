@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Ptrace
+  # Traced process handle for process control, register, and memory access.
   class Tracee
     attr_reader :pid, :registers, :memory
 
@@ -24,6 +25,12 @@ module Ptrace
       @memory = Memory.new(self)
     end
 
+    # Spawns a new tracee process.
+    #
+    # @param command [String]
+    # @param args [Array<String>]
+    # @param options [Integer] ptrace option mask for PTRACE_SETOPTIONS
+    # @return [Ptrace::Tracee]
     def self.spawn(command, *args, options: DEFAULT_TRACE_OPTIONS)
       child_pid = Process.fork do
         Binding.safe_ptrace(Constants::PTRACE_TRACEME, 0, 0, 0)
@@ -41,6 +48,11 @@ module Ptrace
       tracee
     end
 
+    # Attaches to an existing process.
+    #
+    # @param pid [Integer]
+    # @param options [Integer] ptrace option mask for PTRACE_SETOPTIONS
+    # @return [Ptrace::Tracee]
     def self.attach(pid, options: DEFAULT_TRACE_OPTIONS)
       pid = Integer(pid)
       Binding.safe_ptrace(Constants::PTRACE_ATTACH, pid, 0, 0)
@@ -51,56 +63,99 @@ module Ptrace
       tracee
     end
 
+    # Seizes an existing process without stopping it immediately.
+    #
+    # @param pid [Integer]
+    # @param options [Integer] ptrace seize options
+    # @return [Ptrace::Tracee]
     def self.seize(pid, options: 0)
       pid = Integer(pid)
       Binding.safe_ptrace(Constants::PTRACE_SEIZE, pid, 0, options)
       new(pid)
     end
 
+    # Continue process execution.
+    #
+    # @param signal [Integer] signal number to inject
+    # @return [Ptrace::Tracee]
     def cont(signal: 0)
       request(Constants::PTRACE_CONT, signal)
       self
     end
 
+    # Resume process until next syscall stop.
+    #
+    # @param signal [Integer] signal number to inject
+    # @return [Ptrace::Tracee]
     def syscall(signal: 0)
       request(Constants::PTRACE_SYSCALL, signal)
       self
     end
 
+    # Single-step one instruction.
+    #
+    # @param signal [Integer] signal number to inject
+    # @return [Ptrace::Tracee]
     def singlestep(signal: 0)
       request(Constants::PTRACE_SINGLESTEP, signal)
       self
     end
 
+    # Detach from process.
+    #
+    # @param signal [Integer] signal number to deliver on detach
+    # @return [Ptrace::Tracee]
     def detach(signal: 0)
       request(Constants::PTRACE_DETACH, signal)
       self
     end
 
+    # Interrupt a seized process.
+    #
+    # @return [Ptrace::Tracee]
     def interrupt
       request(Constants::PTRACE_INTERRUPT, 0)
       self
     end
 
+    # Force-kill process.
+    #
+    # @return [Integer] signal result
     def kill
       Process.kill("KILL", pid)
     end
 
+    # Wait for process state change.
+    #
+    # @param flags [Integer] waitpid flags
+    # @return [Ptrace::Event]
     def wait(flags: 0)
       waited_pid, status = Binding.safe_waitpid(pid, flags: flags)
       Event.new(waited_pid, status)
     end
 
+    # Current syscall metadata.
+    #
+    # @param arch [Symbol]
+    # @return [Ptrace::Syscall::SyscallInfo]
     def current_syscall(arch: CStructs.arch)
       layout = syscall_layout(arch)
       Syscall.from_number(registers[layout.fetch(:number)], arch: arch)
     end
 
+    # Current syscall argument register values.
+    #
+    # @param arch [Symbol]
+    # @return [Array<Integer>]
     def syscall_args(arch: CStructs.arch)
       layout = syscall_layout(arch)
       layout.fetch(:args).map { |reg| registers[reg] }
     end
 
+    # Current syscall return register value.
+    #
+    # @param arch [Symbol]
+    # @return [Integer]
     def syscall_return(arch: CStructs.arch)
       layout = syscall_layout(arch)
       registers[layout.fetch(:return_value)]

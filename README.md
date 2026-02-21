@@ -85,6 +85,12 @@ You can override header paths with:
 - `PTRACE_SYSCALL_HEADER_X86_64`
 - `PTRACE_SYSCALL_HEADER_AARCH64`
 
+Generate YARD documentation:
+
+```bash
+bundle exec yard doc
+```
+
 ## License
 
 MIT

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Ptrace
+  # Syscall metadata lookup and argument templates.
   module Syscall
     SyscallInfo = Struct.new(:number, :name, :arg_names, :arg_types, keyword_init: true)
 
@@ -55,6 +56,9 @@ module Ptrace
 
     module_function
 
+    # @param number [Integer]
+    # @param arch [Symbol]
+    # @return [SyscallInfo]
     def from_number(number, arch: CStructs.arch)
       number = Integer(number)
       info = table(arch: arch).fetch(number) do
@@ -63,6 +67,9 @@ module Ptrace
       apply_template(info)
     end
 
+    # @param name [Symbol, String]
+    # @param arch [Symbol]
+    # @return [SyscallInfo, nil]
     def from_name(name, arch: CStructs.arch)
       sym = name.to_sym
       info = by_name_table(arch: arch)[sym]
@@ -71,6 +78,8 @@ module Ptrace
       apply_template(info)
     end
 
+    # @param arch [Symbol]
+    # @return [Hash{Integer => SyscallInfo}]
     def table(arch: CStructs.arch)
       case arch
       when :x86_64 then SyscallTable::X86_64::TABLE
@@ -80,6 +89,8 @@ module Ptrace
       end
     end
 
+    # @param arch [Symbol]
+    # @return [Hash{Symbol => SyscallInfo}]
     def by_name_table(arch: CStructs.arch)
       case arch
       when :x86_64 then SyscallTable::X86_64::BY_NAME

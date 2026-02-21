@@ -27,6 +27,8 @@ jobs:
           COVERAGE: "1"
           COVERAGE_MIN_LINE: "95"
         run: bundle exec rspec spec/unit spec/ptrace_spec.rb
+      - name: Build YARD database
+        run: bundle exec yard doc -n --no-cache
 
   integration:
     runs-on: ubuntu-latest

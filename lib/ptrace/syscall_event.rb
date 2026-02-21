@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Ptrace
+  # Renderable syscall event (enter/exit).
   class SyscallEvent
     ERRNO_NAME_BY_NUMBER = Errno.constants.each_with_object({}) do |const_name, map|
       errno_class = Errno.const_get(const_name)
@@ -23,14 +24,17 @@ module Ptrace
       @return_value = return_value
     end
 
+    # @return [Boolean]
     def enter?
       phase == :enter
     end
 
+    # @return [Boolean]
     def exit?
       phase == :exit
     end
 
+    # @return [String]
     def to_s
       call = "#{syscall.name}(#{formatted_args})"
       return "#{call} ..." if enter?
@@ -38,6 +42,7 @@ module Ptrace
       "#{call} = #{formatted_return_value}"
     end
 
+    # @return [String]
     def formatted_args
       args.each_with_index.map do |value, index|
         type = syscall.arg_types.fetch(index, nil)
@@ -45,6 +50,7 @@ module Ptrace
       end.join(", ")
     end
 
+    # @return [String]
     def formatted_return_value
       return "?" if return_value.nil?
       return return_value.to_s unless syscall_error_code?(return_value)
