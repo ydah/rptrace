@@ -34,6 +34,39 @@ module Ptrace
 
       map[value] = const_name.to_s
     end.freeze
+    PROT_NAMES = %i[
+      PROT_EXEC PROT_GROWSDOWN PROT_GROWSUP PROT_NONE PROT_READ PROT_SEM PROT_WRITE
+    ].each_with_object({}) do |const_name, map|
+      next unless Fcntl.const_defined?(const_name)
+
+      value = Fcntl.const_get(const_name)
+      next unless value.is_a?(Integer)
+
+      map[value] = const_name.to_s
+    end.freeze
+    MAP_TYPE_MASK = Fcntl.const_defined?(:MAP_TYPE) ? Fcntl::MAP_TYPE : nil
+    MAP_TYPE_NAMES = %i[
+      MAP_PRIVATE MAP_SHARED MAP_SHARED_VALIDATE
+    ].each_with_object({}) do |const_name, map|
+      next unless Fcntl.const_defined?(const_name)
+
+      value = Fcntl.const_get(const_name)
+      next unless value.is_a?(Integer)
+
+      map[value] = const_name.to_s
+    end.freeze
+    MAP_FLAG_NAMES = %i[
+      MAP_32BIT MAP_ANONYMOUS MAP_ANON MAP_DENYWRITE MAP_EXECUTABLE MAP_FILE
+      MAP_FIXED MAP_FIXED_NOREPLACE MAP_GROWSDOWN MAP_HUGETLB MAP_LOCKED MAP_NONBLOCK
+      MAP_NORESERVE MAP_POPULATE MAP_STACK MAP_SYNC MAP_UNINITIALIZED
+    ].each_with_object({}) do |const_name, map|
+      next unless Fcntl.const_defined?(const_name)
+
+      value = Fcntl.const_get(const_name)
+      next unless value.is_a?(Integer) && value.positive?
+
+      map[value] ||= const_name.to_s
+    end.freeze
 
     attr_reader :tracee, :syscall, :args, :return_value, :phase
 
@@ -120,6 +153,10 @@ module Ptrace
 
       if open_flags_argument?(index)
         decode_open_flags(number)
+      elsif mmap_prot_argument?(index)
+        decode_mmap_prot(number)
+      elsif mmap_flags_argument?(index)
+        decode_mmap_flags(number)
       else
         format("0x%x", number)
       end
@@ -139,6 +176,18 @@ module Ptrace
       flag_arg_name == :flags
     end
 
+    def mmap_prot_argument?(index)
+      return false unless syscall.name == :mmap
+
+      syscall.arg_names.fetch(index, nil) == :prot
+    end
+
+    def mmap_flags_argument?(index)
+      return false unless syscall.name == :mmap
+
+      syscall.arg_names.fetch(index, nil) == :flags
+    end
+
     def decode_open_flags(value)
       names = []
 
@@ -156,6 +205,44 @@ module Ptrace
 
       names << format("0x%x", remaining) unless remaining.zero?
       names.join("|")
+    end
+
+    def decode_mmap_prot(value)
+      return PROT_NAMES.fetch(0, "0") if value.zero?
+
+      names = []
+      remaining = value
+      PROT_NAMES.keys.sort.each do |bit|
+        next if bit.zero?
+        next unless (remaining & bit) == bit
+
+        names << PROT_NAMES.fetch(bit)
+        remaining &= ~bit
+      end
+
+      names << format("0x%x", remaining) unless remaining.zero?
+      names.empty? ? format("0x%x", value) : names.join("|")
+    end
+
+    def decode_mmap_flags(value)
+      names = []
+      remaining = value
+
+      if MAP_TYPE_MASK
+        map_type = value & MAP_TYPE_MASK
+        names << MAP_TYPE_NAMES.fetch(map_type, format("0x%x", map_type)) unless map_type.zero?
+        remaining &= ~MAP_TYPE_MASK
+      end
+
+      MAP_FLAG_NAMES.keys.sort.each do |bit|
+        next unless (remaining & bit) == bit
+
+        names << MAP_FLAG_NAMES.fetch(bit)
+        remaining &= ~bit
+      end
+
+      names << format("0x%x", remaining) unless remaining.zero?
+      names.empty? ? format("0x%x", value) : names.join("|")
     end
 
     def pointer_null?(value)

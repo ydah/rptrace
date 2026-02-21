@@ -101,5 +101,58 @@ RSpec.describe Ptrace::SyscallEvent do
 
       expect(event.to_s).to eq("ioctl(3, 0x1234, NULL) ...")
     end
+
+    it "decodes mmap prot and flags as symbolic names" do
+      stub_const("#{described_class}::PROT_NAMES", {0 => "PROT_NONE", 1 => "PROT_READ", 2 => "PROT_WRITE"})
+      stub_const("#{described_class}::MAP_TYPE_MASK", 0x0f)
+      stub_const("#{described_class}::MAP_TYPE_NAMES", {1 => "MAP_SHARED", 2 => "MAP_PRIVATE"})
+      stub_const("#{described_class}::MAP_FLAG_NAMES", {0x20 => "MAP_ANONYMOUS"})
+
+      syscall = Ptrace::Syscall::SyscallInfo.new(
+        number: 9,
+        name: :mmap,
+        arg_names: %i[addr length prot flags fd offset],
+        arg_types: %i[ptr size flags flags fd int]
+      )
+      event = described_class.new(
+        tracee: tracee,
+        syscall: syscall,
+        args: [0, 4096, 1 | 2, 2 | 0x20, -1, 0],
+        phase: :enter
+      )
+
+      rendered = event.to_s
+      expect(rendered).to include("PROT_READ")
+      expect(rendered).to include("PROT_WRITE")
+      expect(rendered).to include("MAP_PRIVATE")
+      expect(rendered).to include("MAP_ANONYMOUS")
+    end
+
+    it "shows unknown mmap bits as hex residue" do
+      stub_const("#{described_class}::PROT_NAMES", {1 => "PROT_READ"})
+      stub_const("#{described_class}::MAP_TYPE_MASK", 0x0f)
+      stub_const("#{described_class}::MAP_TYPE_NAMES", {1 => "MAP_SHARED", 2 => "MAP_PRIVATE"})
+      stub_const("#{described_class}::MAP_FLAG_NAMES", {0x20 => "MAP_ANONYMOUS"})
+
+      syscall = Ptrace::Syscall::SyscallInfo.new(
+        number: 9,
+        name: :mmap,
+        arg_names: %i[addr length prot flags fd offset],
+        arg_types: %i[ptr size flags flags fd int]
+      )
+      unknown_prot = 0x40
+      unknown_map_flag = 0x80
+
+      event = described_class.new(
+        tracee: tracee,
+        syscall: syscall,
+        args: [0, 4096, unknown_prot, unknown_map_flag, -1, 0],
+        phase: :enter
+      )
+
+      rendered = event.to_s
+      expect(rendered).to include("0x40")
+      expect(rendered).to include("0x80")
+    end
   end
 end
