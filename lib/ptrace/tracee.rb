@@ -20,6 +20,7 @@ module Ptrace
         return_value: :x0
       }.freeze
     }.freeze
+    BREAKPOINT_OPCODE = "\xCC".b
 
     def initialize(pid)
       @pid = Integer(pid)
@@ -170,6 +171,64 @@ module Ptrace
       ProcMaps.read(pid)
     end
 
+    # Returns active software breakpoints.
+    #
+    # @return [Array<Ptrace::Breakpoint>]
+    def breakpoints
+      breakpoint_store.values
+    end
+
+    # Looks up an active software breakpoint by address.
+    #
+    # @param address [Integer]
+    # @return [Ptrace::Breakpoint, nil]
+    def breakpoint(address)
+      breakpoint_store[Integer(address)]
+    end
+
+    # Installs an x86_64 INT3 software breakpoint.
+    #
+    # @param address [Integer]
+    # @return [Ptrace::Breakpoint]
+    # @raise [Ptrace::UnsupportedArchError]
+    def set_breakpoint(address)
+      ensure_breakpoint_supported_arch!
+
+      addr = Integer(address)
+      existing = breakpoint_store[addr]
+      return existing if existing&.enabled?
+
+      original_byte = memory.read(addr, 1)
+      memory.write(addr, BREAKPOINT_OPCODE)
+      breakpoint_store[addr] = Breakpoint.new(tracee: self, address: addr, original_byte: original_byte)
+    end
+
+    # Restores a previously installed software breakpoint.
+    #
+    # @param address [Integer]
+    # @return [Ptrace::Breakpoint, nil]
+    def remove_breakpoint(address)
+      addr = Integer(address)
+      existing = breakpoint_store[addr]
+      return nil unless existing
+
+      memory.write(addr, existing.original_byte)
+      existing.disable!
+      breakpoint_store.delete(addr)
+      existing
+    end
+
+    # Restores and removes all active software breakpoints.
+    #
+    # @return [Integer] number of removed breakpoints
+    def clear_breakpoints
+      count = 0
+      breakpoint_store.keys.each do |addr|
+        count += 1 if remove_breakpoint(addr)
+      end
+      count
+    end
+
     private
 
     def request(request, signal)
@@ -180,6 +239,17 @@ module Ptrace
       SYSCALL_REGISTERS.fetch(arch.to_sym) do
         raise UnsupportedArchError, "unsupported syscall register layout for #{arch}"
       end
+    end
+
+    def breakpoint_store
+      @breakpoint_store ||= {}
+    end
+
+    def ensure_breakpoint_supported_arch!
+      arch = CStructs.arch
+      return if arch == :x86_64
+
+      raise UnsupportedArchError, "software breakpoints are supported only on x86_64 (got #{arch})"
     end
 
     class << self
