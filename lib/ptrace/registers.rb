@@ -4,25 +4,26 @@ require "fiddle"
 
 module Ptrace
   class Registers
-    def initialize(tracee)
+    def initialize(tracee, arch: CStructs.arch)
       @tracee = tracee
+      @arch = arch.to_sym
     end
 
     def read
-      buffer = Fiddle::Pointer.malloc(CStructs.regs_size)
-      Binding.safe_ptrace(Constants::PTRACE_GETREGS, @tracee.pid, 0, buffer.to_i)
-      CStructs.decode_regs(buffer)
+      buffer = Fiddle::Pointer.malloc(CStructs.regs_size(arch: @arch))
+      request_read(buffer)
+      CStructs.decode_regs(buffer, arch: @arch)
     end
 
     def write(values)
       updates = normalize_updates(values)
       current = read
       merged = current.merge(updates)
-      encoded = CStructs.encode_regs(merged)
+      encoded = CStructs.encode_regs(merged, arch: @arch)
       buffer = Fiddle::Pointer.malloc(encoded.bytesize)
       buffer[0, encoded.bytesize] = encoded
 
-      Binding.safe_ptrace(Constants::PTRACE_SETREGS, @tracee.pid, 0, buffer.to_i)
+      request_write(buffer, encoded.bytesize)
       merged
     end
 
@@ -60,13 +61,42 @@ module Ptrace
     end
 
     def inspect
-      "#<#{self.class} pid=#{@tracee.pid} regs=#{read.inspect}>"
+      "#<#{self.class} pid=#{@tracee.pid} arch=#{@arch} regs=#{read.inspect}>"
     end
 
     private
 
+    def request_read(buffer)
+      if regset_mode?
+        iovec = build_iovec_pointer(buffer, CStructs.regs_size(arch: @arch))
+        Binding.safe_ptrace(Constants::PTRACE_GETREGSET, @tracee.pid, Constants::NT_PRSTATUS, iovec.to_i)
+      else
+        Binding.safe_ptrace(Constants::PTRACE_GETREGS, @tracee.pid, 0, buffer.to_i)
+      end
+    end
+
+    def request_write(buffer, length)
+      if regset_mode?
+        iovec = build_iovec_pointer(buffer, length)
+        Binding.safe_ptrace(Constants::PTRACE_SETREGSET, @tracee.pid, Constants::NT_PRSTATUS, iovec.to_i)
+      else
+        Binding.safe_ptrace(Constants::PTRACE_SETREGS, @tracee.pid, 0, buffer.to_i)
+      end
+    end
+
+    def build_iovec_pointer(buffer, length)
+      encoded = CStructs.pack_iovec(base: buffer.to_i, length: length)
+      iovec = Fiddle::Pointer.malloc(encoded.bytesize)
+      iovec[0, encoded.bytesize] = encoded
+      iovec
+    end
+
+    def regset_mode?
+      @arch == :aarch64
+    end
+
     def register_name?(name)
-      CStructs.reg_names.include?(name.to_sym)
+      CStructs.reg_names(arch: @arch).include?(name.to_sym)
     end
 
     def normalize_reg_name(name)

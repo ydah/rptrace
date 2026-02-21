@@ -10,4 +10,12 @@ RSpec.describe Ptrace::CStructs do
 
     expect(described_class.regs_size(arch: described_class.arch)).to eq(names.length * 8)
   end
+
+  it "packs and unpacks iovec structures" do
+    encoded = described_class.pack_iovec(base: 0x1234, length: 216)
+    decoded = described_class.unpack_iovec(encoded)
+
+    expect(decoded[:base]).to eq(0x1234)
+    expect(decoded[:length]).to eq(216)
+  end
 end

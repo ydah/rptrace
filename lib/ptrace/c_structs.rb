@@ -4,6 +4,12 @@ require "rbconfig"
 
 module Ptrace
   module CStructs
+    POINTER_SIZE = begin
+      [0].pack("J").bytesize
+    rescue StandardError
+      8
+    end
+    POINTER_PACK = POINTER_SIZE == 8 ? "Q<" : "L<"
     WORD_SIZE = 8
     WORD_MASK = (1 << (WORD_SIZE * 8)) - 1
     PACK_FORMAT = "Q<"
@@ -49,6 +55,15 @@ module Ptrace
       names = reg_names(arch: arch)
       values = names.map { |name| Integer(regs.fetch(name, 0)) & WORD_MASK }
       values.pack("#{PACK_FORMAT}*")
+    end
+
+    def pack_iovec(base:, length:)
+      [Integer(base), Integer(length)].pack("#{POINTER_PACK}#{POINTER_PACK}")
+    end
+
+    def unpack_iovec(bytes)
+      base, length = bytes.unpack("#{POINTER_PACK}#{POINTER_PACK}")
+      { base: base, length: length }
     end
 
     def detect_arch

@@ -2,6 +2,8 @@
 
 module Ptrace
   module Constants
+    NT_PRSTATUS = 1
+
     PTRACE_TRACEME = 0
     PTRACE_PEEKTEXT = 1
     PTRACE_PEEKDATA = 2
