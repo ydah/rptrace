@@ -24,6 +24,14 @@ RSpec.describe Ptrace do
       end.to raise_error(RuntimeError, "boom")
       expect(tracee).to have_received(:detach)
     end
+
+    it "suppresses detach errors during ensure" do
+      tracee = instance_double(Ptrace::Tracee)
+      allow(tracee).to receive(:detach).and_raise(Ptrace::NoProcessError.new("gone"))
+      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+
+      expect { described_class.trace("/bin/true") { :ok } }.not_to raise_error
+    end
   end
 
   describe ".strace" do
@@ -56,6 +64,22 @@ RSpec.describe Ptrace do
       expect(yielded.last).to be_exit
       expect(yielded.last.return_value).to eq(12)
       expect(tracee).to have_received(:detach)
+    end
+
+    it "skips non-syscall stops and exits without yielding" do
+      tracee = instance_double(Ptrace::Tracee)
+      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      allow(tracee).to receive(:detach)
+      allow(tracee).to receive(:syscall).and_return(tracee)
+
+      not_syscall_stop = instance_double(Ptrace::Event, exited?: false, signaled?: false, syscall_stop?: false)
+      process_exit = instance_double(Ptrace::Event, exited?: true, signaled?: false, syscall_stop?: false)
+      allow(tracee).to receive(:wait).and_return(not_syscall_stop, process_exit)
+
+      yielded = []
+      described_class.strace("/bin/echo", "hello") { |event| yielded << event }
+
+      expect(yielded).to eq([])
     end
   end
 end

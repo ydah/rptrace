@@ -8,4 +8,8 @@ RSpec.describe Ptrace do
   it "uses top-level Ptrace namespace" do
     expect(defined?(Ptrace::Ruby)).to be_nil
   end
+
+  it "exposes linux? helper as boolean" do
+    expect([true, false]).to include(Ptrace.linux?)
+  end
 end

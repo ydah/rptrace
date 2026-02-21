@@ -21,4 +21,15 @@ RSpec.describe Ptrace::WaitStatus do
     expect(described_class.signaled?(status)).to be(true)
     expect(described_class.term_signal(status)).to eq(9)
   end
+
+  it "detects continued state" do
+    expect(described_class.continued?(0xFFFF)).to be(true)
+  end
+
+  it "detects core dump flag on signaled status" do
+    status = 11 | 0x80
+
+    expect(described_class.signaled?(status)).to be(true)
+    expect(described_class.core_dumped?(status)).to be(true)
+  end
 end

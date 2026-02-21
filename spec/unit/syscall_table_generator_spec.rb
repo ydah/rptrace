@@ -58,5 +58,40 @@ RSpec.describe Ptrace::SyscallTable::Generator do
         ENV["PTRACE_SYSCALL_HEADER_X86_64"] = original_env
       end
     end
+
+    it "raises for unsupported architecture names" do
+      expect do
+        described_class.generate_for(:mips, root_dir: Dir.pwd)
+      end.to raise_error(ArgumentError, /unsupported arch/)
+    end
+
+    it "raises when env header path is invalid" do
+      original_env = ENV["PTRACE_SYSCALL_HEADER_X86_64"]
+      ENV["PTRACE_SYSCALL_HEADER_X86_64"] = "/tmp/does-not-exist-header.h"
+
+      expect do
+        described_class.generate_for(:x86_64, root_dir: Dir.pwd)
+      end.to raise_error(ArgumentError, /does not exist/)
+    ensure
+      ENV["PTRACE_SYSCALL_HEADER_X86_64"] = original_env
+    end
+
+    it "raises when header has no parseable syscall entries" do
+      Dir.mktmpdir do |tmpdir|
+        root_dir = File.join(tmpdir, "project")
+        header_path = File.join(tmpdir, "empty.h")
+        FileUtils.mkdir_p(File.join(root_dir, "lib/ptrace/syscall_table"))
+        File.write(header_path, "#define SOMETHING_ELSE 1\n")
+
+        original_env = ENV["PTRACE_SYSCALL_HEADER_X86_64"]
+        ENV["PTRACE_SYSCALL_HEADER_X86_64"] = header_path
+
+        expect do
+          described_class.generate_for(:x86_64, root_dir: root_dir)
+        end.to raise_error(ArgumentError, /no syscall entries found/)
+      ensure
+        ENV["PTRACE_SYSCALL_HEADER_X86_64"] = original_env
+      end
+    end
   end
 end

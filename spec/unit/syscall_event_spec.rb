@@ -62,5 +62,26 @@ RSpec.describe Ptrace::SyscallEvent do
 
       expect(event.to_s).to eq("execve(0x7000, NULL, NULL) ...")
     end
+
+    it "formats normal numeric return values" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(number: 0, name: :read, arg_names: %i[fd], arg_types: %i[fd])
+      event = described_class.new(tracee: tracee, syscall: syscall, args: [3], phase: :exit, return_value: 12)
+
+      expect(event.to_s).to eq("read(3) = 12")
+    end
+
+    it "formats nil return as unknown marker" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(number: 60, name: :exit, arg_names: %i[status], arg_types: %i[int])
+      event = described_class.new(tracee: tracee, syscall: syscall, args: [0], phase: :exit, return_value: nil)
+
+      expect(event.to_s).to eq("exit(0) = ?")
+    end
+
+    it "formats non-pointer/non-integer values with inspect fallback" do
+      syscall = Ptrace::Syscall::SyscallInfo.new(number: 999, name: :custom, arg_names: [:obj], arg_types: [:unknown])
+      event = described_class.new(tracee: tracee, syscall: syscall, args: [%w[a b]], phase: :enter)
+
+      expect(event.to_s).to eq("custom([\"a\", \"b\"]) ...")
+    end
   end
 end

@@ -30,5 +30,28 @@ RSpec.describe Ptrace::Event do
       expect(event.clone_event?).to be(false)
       expect(event.exit_event?).to be(false)
     end
+
+    it "detects continued state" do
+      event = described_class.new(301, 0xFFFF)
+
+      expect(event.continued?).to be(true)
+      expect(event.exited?).to be(false)
+      expect(event.stopped?).to be(false)
+    end
+
+    it "detects signaled state and term signal" do
+      event = described_class.new(302, 9)
+
+      expect(event.signaled?).to be(true)
+      expect(event.term_signal).to eq(9)
+      expect(event.exited?).to be(false)
+    end
+
+    it "formats inspect output with pid and hex status" do
+      event = described_class.new(999, 0xABC)
+
+      expect(event.inspect).to include("pid=999")
+      expect(event.inspect).to include("status=0xabc")
+    end
   end
 end

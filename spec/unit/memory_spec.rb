@@ -92,4 +92,53 @@ RSpec.describe Ptrace::Memory do
   it "returns zero when writing empty bytes" do
     expect(memory.write(0x1000, "")).to eq(0)
   end
+
+  it "raises when reading with negative length" do
+    expect { memory.read(0x1000, -1) }.to raise_error(ArgumentError, /non-negative/)
+  end
+
+  it "reads zero length as empty bytes" do
+    expect(memory.read(0x1000, 0)).to eq("".b)
+  end
+
+  it "raises when max is not positive for read_string" do
+    expect { memory.read_string(0x1000, max: 0) }.to raise_error(ArgumentError, /positive/)
+  end
+
+  it "returns full bytes when nul terminator is not found" do
+    words = {
+      0x5000 => to_word.call("ABCDEFGH"),
+      0x5000 + word_size => to_word.call("IJKLMNOP")
+    }
+
+    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, _data|
+      case request
+      when Ptrace::Constants::PTRACE_PEEKDATA
+        words.fetch(addr)
+      else
+        raise "unexpected request: #{request}"
+      end
+    end
+
+    expect(memory.read_string(0x5000, max: word_size * 2)).to eq("ABCDEFGHIJKLMNOP".b)
+  end
+
+  it "supports [] and []= helpers" do
+    writes = {}
+    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
+      case request
+      when Ptrace::Constants::PTRACE_PEEKDATA
+        writes.fetch(addr, 0x11223344)
+      when Ptrace::Constants::PTRACE_POKEDATA
+        writes[addr] = Integer(data)
+        0
+      else
+        raise "unexpected request: #{request}"
+      end
+    end
+
+    expect(memory[0x6000].bytesize).to eq(word_size)
+    memory[0x6000] = 0xAA
+    expect(writes).to have_key(0x6000)
+  end
 end

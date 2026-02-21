@@ -33,4 +33,11 @@ RSpec.describe Ptrace::Syscall do
       expect(described_class.from_name(:definitely_unknown_call, arch: :x86_64)).to be_nil
     end
   end
+
+  describe ".table" do
+    it "returns empty hash for unsupported architecture" do
+      expect(described_class.table(arch: :mips)).to eq({})
+      expect(described_class.by_name_table(arch: :mips)).to eq({})
+    end
+  end
 end

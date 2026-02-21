@@ -18,4 +18,10 @@ RSpec.describe Ptrace::CStructs do
     expect(decoded[:base]).to eq(0x1234)
     expect(decoded[:length]).to eq(216)
   end
+
+  it "raises for unsupported register architecture" do
+    expect do
+      described_class.reg_names(arch: :mips)
+    end.to raise_error(Ptrace::UnsupportedArchError, /Unsupported architecture/)
+  end
 end
