@@ -168,6 +168,8 @@ bundle exec yard doc
 - CI release workflow: `.github/workflows/release.yml`
 - Trigger by pushing a tag (example: `v0.1.0`) or via `workflow_dispatch`
 - Set repository secret `RUBYGEMS_API_KEY` to enable `gem push`
+- Local preflight: `bundle exec rake release:preflight`
+- Local credential check: `bundle exec rake release:check_credentials`
 
 ## Limitations
 

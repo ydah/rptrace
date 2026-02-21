@@ -3,6 +3,7 @@
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 require_relative "lib/ptrace/syscall_table/generator"
+require "yaml"
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -35,6 +36,36 @@ namespace :syscall do
     end
   rescue Ptrace::SyscallTable::Generator::HeaderNotFoundError, ArgumentError => e
     abort("syscall:generate failed: #{e.message}")
+  end
+end
+
+namespace :release do
+  desc "Run release preflight checks (unit specs, docs, gem build)"
+  task :preflight do
+    sh "bundle exec rspec spec/unit spec/ptrace_spec.rb"
+    sh "bundle exec yard doc -n --no-cache"
+    sh "gem build ptrace-ruby.gemspec"
+  end
+
+  desc "Check RubyGems API key availability for gem push"
+  task :check_credentials do
+    env_key = ENV["RUBYGEMS_API_KEY"]
+    if env_key && !env_key.strip.empty?
+      puts "RUBYGEMS_API_KEY is set in environment"
+      next
+    end
+
+    credentials_path = File.expand_path("~/.gem/credentials")
+    if File.readable?(credentials_path)
+      credentials = YAML.load_file(credentials_path) || {}
+      api_key = credentials[":rubygems_api_key"] || credentials["rubygems_api_key"]
+      if api_key && !api_key.to_s.strip.empty?
+        puts "RubyGems API key found in #{credentials_path}"
+        next
+      end
+    end
+
+    abort("release:check_credentials failed: RUBYGEMS_API_KEY is not configured")
   end
 end
 
