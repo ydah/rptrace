@@ -2,11 +2,20 @@
 
 `ptrace-ruby` is a Ruby wrapper for Linux `ptrace(2)` focused on building tracers and debugger-like tooling with a Ruby-friendly API.
 
+## Overview and Motivation
+
+Linux `ptrace(2)` is powerful but low-level. This gem wraps process control, register/memory access, and syscall decoding behind a small Ruby API so you can build:
+
+- `strace`-like tools
+- process instrumentation utilities
+- debugger-oriented experiments
+
 ## Features
 
 - Top-level namespace is `Ptrace` (no `Ptrace::Ruby` nesting)
 - `Tracee` API for `spawn`, `attach`, `cont`, `syscall`, `detach`, and `wait`
 - Register and memory wrappers (`Registers`, `Memory`)
+- `/proc/<pid>/maps` parser (`ProcMaps`, `Tracee#memory_maps`)
 - Syscall lookup (`Ptrace::Syscall`) for `x86_64`/`aarch64`
 - High-level tracing helper `Ptrace.strace`
 
@@ -36,19 +45,7 @@ Ptrace.strace("/bin/ls", "-la", "/tmp") do |event|
 end
 ```
 
-## Examples
-
-- `examples/simple_strace.rb`
-- `examples/syscall_counter.rb`
-- `examples/file_access_tracer.rb`
-- `examples/memory_reader.rb`
-
-## Platform
-
-- Linux only
-- Ruby 3.1+
-
-## Permissions
+## Permission Guide
 
 `ptrace` requires privilege on Linux:
 
@@ -61,6 +58,18 @@ Integration specs are opt-in and require:
 ```bash
 PTRACE_RUN_INTEGRATION=1 bundle exec rspec spec/integration
 ```
+
+## Examples
+
+- `examples/simple_strace.rb`
+- `examples/syscall_counter.rb`
+- `examples/file_access_tracer.rb`
+- `examples/memory_reader.rb`
+
+## API Reference
+
+- Generate docs: `bundle exec yard doc`
+- Open index: `doc/index.html`
 
 ## Development
 
@@ -95,6 +104,13 @@ Generate YARD documentation:
 ```bash
 bundle exec yard doc
 ```
+
+## Limitations
+
+- Linux only
+- Ruby 3.1+
+- Architecture support: `x86_64` and `aarch64`
+- Integration tests require ptrace permission (`root` or `CAP_SYS_PTRACE`)
 
 ## License
 
