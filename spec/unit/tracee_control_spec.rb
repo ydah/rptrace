@@ -112,6 +112,65 @@ RSpec.describe Ptrace::Tracee do
 
       expect(tracee.seccomp_data).to eq(0xAB)
     end
+
+    it "reads seccomp metadata via ptrace helper" do
+      allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, pid, addr, data|
+        expect(request).to eq(Ptrace::Constants::PTRACE_SECCOMP_GET_METADATA)
+        expect(pid).to eq(4321)
+        expect(addr).to eq(Ptrace::CStructs.seccomp_metadata_size)
+        pointer = Fiddle::Pointer.new(data)
+        decoded = Ptrace::CStructs.unpack_seccomp_metadata(pointer[0, Ptrace::CStructs.seccomp_metadata_size])
+        expect(decoded[:filter_off]).to eq(2)
+        pointer[0, Ptrace::CStructs.seccomp_metadata_size] = Ptrace::CStructs.pack_seccomp_metadata(
+          filter_off: 2,
+          flags: 0x80
+        )
+        0
+      end
+
+      expect(tracee.seccomp_metadata(index: 2)).to eq(filter_off: 2, flags: 0x80)
+    end
+
+    it "reads and decodes seccomp filter instructions" do
+      raw_filter = [
+        [0x20, 0, 0, 4].pack("S<CCL<"),
+        [0x06, 0, 0, 0x7FFF0000].pack("S<CCL<")
+      ].join
+      call_count = 0
+
+      allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, pid, addr, data|
+        expect(request).to eq(Ptrace::Constants::PTRACE_SECCOMP_GET_FILTER)
+        expect(pid).to eq(4321)
+        expect(addr).to eq(1)
+
+        call_count += 1
+        if data.zero?
+          2
+        else
+          pointer = Fiddle::Pointer.new(data)
+          pointer[0, raw_filter.bytesize] = raw_filter
+          2
+        end
+      end
+
+      decoded = tracee.seccomp_filter(index: 1)
+      expect(call_count).to eq(2)
+      expect(decoded).to eq([
+        { code: 0x20, jt: 0, jf: 0, k: 4 },
+        { code: 0x06, jt: 0, jf: 0, k: 0x7FFF0000 }
+      ])
+    end
+
+    it "returns empty seccomp filter when tracee has no filter instructions" do
+      allow(Ptrace::Binding).to receive(:safe_ptrace).with(
+        Ptrace::Constants::PTRACE_SECCOMP_GET_FILTER,
+        4321,
+        0,
+        0
+      ).and_return(0)
+
+      expect(tracee.seccomp_filter(index: 0)).to eq([])
+    end
   end
 
   describe "class controls" do

@@ -220,6 +220,35 @@ module Ptrace
       event_message & 0xFFFF_FFFF
     end
 
+    # Returns seccomp filter metadata for given filter index.
+    #
+    # @param index [Integer]
+    # @return [Hash<Symbol, Integer>] keys: :filter_off, :flags
+    def seccomp_metadata(index: 0)
+      metadata = CStructs.pack_seccomp_metadata(filter_off: index, flags: 0)
+      pointer = Fiddle::Pointer.malloc(CStructs.seccomp_metadata_size)
+      pointer[0, metadata.bytesize] = metadata
+      Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_METADATA, pid, CStructs.seccomp_metadata_size, pointer.to_i)
+      CStructs.unpack_seccomp_metadata(pointer[0, CStructs.seccomp_metadata_size])
+    end
+
+    # Returns decoded seccomp BPF instructions for given filter index.
+    #
+    # @param index [Integer]
+    # @return [Array<Hash<Symbol, Integer>>]
+    def seccomp_filter(index: 0)
+      filter_index = Integer(index)
+      count = Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_FILTER, pid, filter_index, 0)
+      insn_count = Integer(count)
+      return [] if insn_count <= 0
+
+      byte_length = insn_count * CStructs::SECCOMP_FILTER_INSN_SIZE
+      pointer = Fiddle::Pointer.malloc(byte_length)
+      copied = Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_FILTER, pid, filter_index, pointer.to_i)
+      copied_count = Integer(copied)
+      CStructs.decode_seccomp_filter(pointer[0, copied_count * CStructs::SECCOMP_FILTER_INSN_SIZE])
+    end
+
     # Returns active software breakpoints.
     #
     # @return [Array<Ptrace::Breakpoint>]

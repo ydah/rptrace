@@ -14,6 +14,9 @@ module Ptrace
     WORD_SIZE = 8
     WORD_MASK = (1 << (WORD_SIZE * 8)) - 1
     PACK_FORMAT = "Q<"
+    SECCOMP_METADATA_FORMAT = "Q<Q<"
+    SECCOMP_METADATA_SIZE = 16
+    SECCOMP_FILTER_INSN_SIZE = 8
 
     X86_64_REGS = %i[
       r15 r14 r13 r12 rbp rbx r11 r10 r9 r8
@@ -81,6 +84,39 @@ module Ptrace
     def unpack_iovec(bytes)
       base, length = bytes.unpack("#{POINTER_PACK}#{POINTER_PACK}")
       { base: base, length: length }
+    end
+
+    # @return [Integer]
+    def seccomp_metadata_size
+      SECCOMP_METADATA_SIZE
+    end
+
+    # @param filter_off [Integer]
+    # @param flags [Integer]
+    # @return [String]
+    def pack_seccomp_metadata(filter_off:, flags: 0)
+      [Integer(filter_off), Integer(flags)].pack(SECCOMP_METADATA_FORMAT)
+    end
+
+    # @param bytes [String]
+    # @return [Hash<Symbol, Integer>]
+    def unpack_seccomp_metadata(bytes)
+      filter_off, flags = bytes.unpack(SECCOMP_METADATA_FORMAT)
+      { filter_off: filter_off, flags: flags }
+    end
+
+    # @param bytes [String]
+    # @return [Array<Hash<Symbol, Integer>>]
+    def decode_seccomp_filter(bytes)
+      blob = bytes.to_s.b
+      raise ArgumentError, "seccomp filter bytes must align to #{SECCOMP_FILTER_INSN_SIZE}" unless (blob.bytesize % SECCOMP_FILTER_INSN_SIZE).zero?
+
+      instructions = []
+      blob.bytes.each_slice(SECCOMP_FILTER_INSN_SIZE) do |insn|
+        code, jt, jf, k = insn.pack("C*").unpack("S<CCL<")
+        instructions << { code: code, jt: jt, jf: jf, k: k }
+      end
+      instructions
     end
 
     # @return [Symbol]
