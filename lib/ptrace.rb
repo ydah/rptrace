@@ -7,6 +7,7 @@ require_relative "ptrace/error"
 require_relative "ptrace/constants"
 require_relative "ptrace/binding"
 require_relative "ptrace/c_structs"
+require_relative "ptrace/permission"
 require_relative "ptrace/event"
 require_relative "ptrace/registers"
 require_relative "ptrace/memory"
@@ -24,6 +25,16 @@ module Ptrace
     # @return [Boolean] true when running on Linux host OS
     def linux?
       /linux/.match?(RbConfig::CONFIG.fetch("host_os", ""))
+    end
+
+    # @return [Boolean] true when current process can generally ptrace (root or CAP_SYS_PTRACE)
+    def ptrace_privileged?
+      Permission.privileged_for_ptrace?
+    end
+
+    # @return [Hash] ptrace permission diagnostics
+    def ptrace_permissions
+      Permission.diagnostics
     end
   end
 end

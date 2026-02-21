@@ -12,4 +12,13 @@ RSpec.describe Ptrace do
   it "exposes linux? helper as boolean" do
     expect([true, false]).to include(Ptrace.linux?)
   end
+
+  it "exposes ptrace privilege helper as boolean" do
+    expect([true, false]).to include(Ptrace.ptrace_privileged?)
+  end
+
+  it "exposes ptrace permission diagnostics as hash" do
+    expect(Ptrace.ptrace_permissions).to be_a(Hash)
+    expect(Ptrace.ptrace_permissions).to include(:hints)
+  end
 end
