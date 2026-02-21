@@ -189,6 +189,13 @@ module Ptrace
       buffer[0, Fiddle::SIZEOF_VOIDP].unpack1("J")
     end
 
+    # Reads 32-bit seccomp filter data from ptrace event message.
+    #
+    # @return [Integer]
+    def seccomp_data
+      event_message & 0xFFFF_FFFF
+    end
+
     # Returns active software breakpoints.
     #
     # @return [Array<Ptrace::Breakpoint>]

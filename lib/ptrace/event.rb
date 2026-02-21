@@ -90,6 +90,10 @@ module Ptrace
       event_code == Constants::PTRACE_EVENT_EXIT
     end
 
+    def seccomp_event?
+      event_code == Constants::PTRACE_EVENT_SECCOMP
+    end
+
     # @return [String]
     def inspect
       "#<#{self.class} pid=#{pid} status=0x#{raw_status.to_s(16)} #{state_summary}>"

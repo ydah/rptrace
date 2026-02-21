@@ -82,6 +82,12 @@ RSpec.describe Ptrace::Tracee do
 
       expect(tracee.event_message).to eq(expected)
     end
+
+    it "extracts seccomp filter data from event message" do
+      allow(tracee).to receive(:event_message).and_return(0x1_0000_00AB)
+
+      expect(tracee.seccomp_data).to eq(0xAB)
+    end
   end
 
   describe "class controls" do
