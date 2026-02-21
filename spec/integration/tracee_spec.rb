@@ -132,6 +132,39 @@ RSpec.describe Ptrace::Tracee do
     end
   end
 
+  it "seizes and interrupts a running process" do
+    tracee = nil
+    child_pid = nil
+
+    with_ptrace_permission do
+      child_pid = Process.spawn("/bin/sleep", "2")
+      tracee = described_class.seize(child_pid, options: Ptrace::Constants::PTRACE_O_TRACESYSGOOD)
+      tracee.interrupt
+      event = tracee.wait(flags: Ptrace::Constants::WALL)
+
+      expect(event.stopped?).to be(true)
+      expect(event.exited?).to be(false)
+    end
+  ensure
+    begin
+      tracee&.detach
+    rescue Ptrace::Error, Errno::ESRCH
+      nil
+    end
+
+    begin
+      Process.kill("KILL", child_pid) if child_pid
+    rescue Errno::ESRCH
+      nil
+    end
+
+    begin
+      Process.wait(child_pid) if child_pid
+    rescue Errno::ECHILD
+      nil
+    end
+  end
+
   it "yields syscall enter/exit events via Ptrace.strace" do
     with_ptrace_permission do
       events = []
