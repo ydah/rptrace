@@ -30,6 +30,11 @@ RSpec.describe Ptrace::Tracee do
       expect(tracee.interrupt).to eq(tracee)
     end
 
+    it "sends LISTEN request and returns self" do
+      expect(Ptrace::Binding).to receive(:safe_ptrace).with(Ptrace::Constants::PTRACE_LISTEN, 4321, 0, 0)
+      expect(tracee.listen).to eq(tracee)
+    end
+
     it "sets ptrace options and returns self" do
       expect(Ptrace::Binding).to receive(:safe_ptrace).with(
         Ptrace::Constants::PTRACE_SETOPTIONS,

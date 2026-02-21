@@ -130,6 +130,14 @@ module Ptrace
       self
     end
 
+    # Resumes a tracee in ptrace-listen mode.
+    #
+    # @return [Ptrace::Tracee]
+    def listen
+      request(Constants::PTRACE_LISTEN, 0)
+      self
+    end
+
     # Sets ptrace options mask for this tracee.
     #
     # @param options [Integer] bitmask of PTRACE_O_* flags
