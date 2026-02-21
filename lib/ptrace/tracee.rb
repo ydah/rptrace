@@ -20,7 +20,9 @@ module Ptrace
         return_value: :x0
       }.freeze
     }.freeze
+    # x86 INT3 software breakpoint opcode byte.
     BREAKPOINT_OPCODE = "\xCC".b
+    # Seccomp metadata flag numeric value to symbolic tag.
     SECCOMP_METADATA_FLAG_NAMES = {
       Constants::SECCOMP_FILTER_FLAG_TSYNC => :tsync,
       Constants::SECCOMP_FILTER_FLAG_LOG => :log,

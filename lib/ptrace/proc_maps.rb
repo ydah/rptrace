@@ -56,6 +56,7 @@ module Ptrace
       end
     end
 
+    # Pattern for parsing one /proc/<pid>/maps row.
     LINE_PATTERN = /\A(?<start>[0-9a-f]+)-(?<finish>[0-9a-f]+)\s+(?<perms>[rwxps-]{4})\s+(?<offset>[0-9a-f]+)\s+(?<device>[0-9a-f]+:[0-9a-f]+)\s+(?<inode>\d+)\s*(?<path>.*)\z/.freeze
 
     module_function

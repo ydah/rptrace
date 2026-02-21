@@ -2,6 +2,7 @@
 
 module Ptrace
   class << self
+    # Default option set to follow fork/clone descendants.
     FOLLOW_CHILD_TRACE_OPTIONS = Tracee::DEFAULT_TRACE_OPTIONS |
       Constants::PTRACE_O_TRACECLONE |
       Constants::PTRACE_O_TRACEFORK |

@@ -3,8 +3,11 @@
 module Ptrace
   # Runtime helpers to inspect ptrace permission-related environment.
   module Permission
+    # Linux capability bit index for CAP_SYS_PTRACE.
     CAP_SYS_PTRACE_BIT = 19
+    # Yama ptrace scope procfs path.
     YAMA_PTRACE_SCOPE_PATH = "/proc/sys/kernel/yama/ptrace_scope"
+    # Process status procfs path.
     PROC_STATUS_PATH = "/proc/self/status"
 
     module_function

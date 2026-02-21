@@ -17,12 +17,15 @@ module Ptrace
     end.freeze
     # Linux kernel upper bound for -errno syscall return convention.
     LINUX_MAX_ERRNO = 4095
+    # Access mode mask for open/openat flags.
     OPEN_ACCESS_MASK = Fcntl.const_defined?(:O_ACCMODE) ? Fcntl::O_ACCMODE : 0x3
+    # Mapping of open access mode value to symbolic name.
     OPEN_ACCESS_NAMES = {
       (Fcntl.const_defined?(:O_RDONLY) ? Fcntl::O_RDONLY : 0) => "O_RDONLY",
       (Fcntl.const_defined?(:O_WRONLY) ? Fcntl::O_WRONLY : 1) => "O_WRONLY",
       (Fcntl.const_defined?(:O_RDWR) ? Fcntl::O_RDWR : 2) => "O_RDWR"
     }.freeze
+    # Mapping of open/openat modifier bits to symbolic names.
     OPEN_FLAG_NAMES = %i[
       O_APPEND O_ASYNC O_CLOEXEC O_CREAT O_DIRECT O_DIRECTORY O_DSYNC O_EXCL O_LARGEFILE
       O_NOATIME O_NOCTTY O_NOFOLLOW O_NONBLOCK O_PATH O_SYNC O_TMPFILE O_TRUNC
@@ -34,6 +37,7 @@ module Ptrace
 
       map[value] = const_name.to_s
     end.freeze
+    # Mapping of PROT_* values used by mmap/mprotect.
     PROT_NAMES = %i[
       PROT_EXEC PROT_GROWSDOWN PROT_GROWSUP PROT_NONE PROT_READ PROT_SEM PROT_WRITE
     ].each_with_object({}) do |const_name, map|
@@ -44,7 +48,9 @@ module Ptrace
 
       map[value] = const_name.to_s
     end.freeze
+    # Bit mask for MAP_* type field.
     MAP_TYPE_MASK = Fcntl.const_defined?(:MAP_TYPE) ? Fcntl::MAP_TYPE : nil
+    # Mapping of mmap type flags.
     MAP_TYPE_NAMES = %i[
       MAP_PRIVATE MAP_SHARED MAP_SHARED_VALIDATE
     ].each_with_object({}) do |const_name, map|
@@ -55,6 +61,7 @@ module Ptrace
 
       map[value] = const_name.to_s
     end.freeze
+    # Mapping of additional mmap modifier bits.
     MAP_FLAG_NAMES = %i[
       MAP_32BIT MAP_ANONYMOUS MAP_ANON MAP_DENYWRITE MAP_EXECUTABLE MAP_FILE
       MAP_FIXED MAP_FIXED_NOREPLACE MAP_GROWSDOWN MAP_HUGETLB MAP_LOCKED MAP_NONBLOCK

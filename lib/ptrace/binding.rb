@@ -23,6 +23,7 @@ module Ptrace
       Errno::EBUSY::Errno => BusyError,
       Errno::EINVAL::Errno => InvalidArgError
     }.freeze
+    # Guidance suffix appended to EPERM-related ptrace errors.
     PERMISSION_HINT = "try running as root, granting CAP_SYS_PTRACE, and checking /proc/sys/kernel/yama/ptrace_scope".freeze
 
     class << self

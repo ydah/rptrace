@@ -3,6 +3,7 @@
 module Ptrace
   # waitpid status wrapper with ptrace-specific helpers.
   class Event
+    # ptrace event code to symbolic name map for inspect output.
     EVENT_NAME_BY_CODE = {
       Constants::PTRACE_EVENT_FORK => "fork",
       Constants::PTRACE_EVENT_VFORK => "vfork",

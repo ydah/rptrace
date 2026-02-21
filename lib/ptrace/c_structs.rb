@@ -5,25 +5,35 @@ require "rbconfig"
 module Ptrace
   # Architecture-specific register layouts and binary helpers.
   module CStructs
+    # Host pointer width in bytes.
     POINTER_SIZE = begin
       [0].pack("J").bytesize
     rescue StandardError
       8
     end
+    # Pointer pack format for host pointer size.
     POINTER_PACK = POINTER_SIZE == 8 ? "Q<" : "L<"
+    # Register word width in bytes.
     WORD_SIZE = 8
+    # Register word bitmask.
     WORD_MASK = (1 << (WORD_SIZE * 8)) - 1
+    # Register word unpack/pack format.
     PACK_FORMAT = "Q<"
+    # seccomp metadata struct pack format.
     SECCOMP_METADATA_FORMAT = "Q<Q<"
+    # seccomp metadata struct size.
     SECCOMP_METADATA_SIZE = 16
+    # BPF instruction size in seccomp filter dump.
     SECCOMP_FILTER_INSN_SIZE = 8
 
+    # x86_64 user_regs_struct register names.
     X86_64_REGS = %i[
       r15 r14 r13 r12 rbp rbx r11 r10 r9 r8
       rax rcx rdx rsi rdi orig_rax rip cs eflags
       rsp ss fs_base gs_base ds es fs gs
     ].freeze
 
+    # aarch64 register names returned by NT_PRSTATUS regset.
     AARCH64_REGS = (0..30).map { |i| :"x#{i}" }.push(:sp, :pc, :pstate).freeze
 
     module_function
