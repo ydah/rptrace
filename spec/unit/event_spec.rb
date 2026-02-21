@@ -70,5 +70,21 @@ RSpec.describe Ptrace::Event do
       expect(event.inspect).to include("state=stopped(SIGTRAP)")
       expect(event.inspect).to include("event=exec")
     end
+
+    it "formats inspect output for non-syscall stop without ptrace event name" do
+      status = 0x7F | (Signal.list.fetch("STOP") << 8)
+      event = described_class.new(1003, status)
+
+      expect(event.inspect).to include("state=stopped(SIGSTOP)")
+      expect(event.inspect).not_to include("event=")
+    end
+
+    it "formats inspect output for signaled state and falls back on unknown signal name" do
+      event = described_class.new(1004, 9)
+      allow(Signal).to receive(:signame).and_raise(ArgumentError)
+
+      expect(event.inspect).to include("state=signaled(SIG9)")
+    end
+
   end
 end
