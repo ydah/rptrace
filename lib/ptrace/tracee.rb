@@ -130,6 +130,22 @@ module Ptrace
       self
     end
 
+    # Sets ptrace options mask for this tracee.
+    #
+    # @param options [Integer] bitmask of PTRACE_O_* flags
+    # @return [Ptrace::Tracee]
+    def set_options(options)
+      Binding.safe_ptrace(Constants::PTRACE_SETOPTIONS, pid, 0, Integer(options))
+      self
+    end
+
+    # Enables seccomp tracing with syscall-stop distinction.
+    #
+    # @return [Ptrace::Tracee]
+    def enable_seccomp_events!
+      set_options(Constants::PTRACE_O_TRACESYSGOOD | Constants::PTRACE_O_TRACESECCOMP)
+    end
+
     # Force-kill process.
     #
     # @return [Integer] signal result

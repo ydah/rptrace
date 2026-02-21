@@ -30,6 +30,25 @@ RSpec.describe Ptrace::Tracee do
       expect(tracee.interrupt).to eq(tracee)
     end
 
+    it "sets ptrace options and returns self" do
+      expect(Ptrace::Binding).to receive(:safe_ptrace).with(
+        Ptrace::Constants::PTRACE_SETOPTIONS,
+        4321,
+        0,
+        7
+      )
+
+      expect(tracee.set_options(7)).to eq(tracee)
+    end
+
+    it "enables seccomp event tracing options" do
+      expect(tracee).to receive(:set_options).with(
+        Ptrace::Constants::PTRACE_O_TRACESYSGOOD | Ptrace::Constants::PTRACE_O_TRACESECCOMP
+      ).and_return(tracee)
+
+      expect(tracee.enable_seccomp_events!).to eq(tracee)
+    end
+
     it "sends DETACH request and returns self" do
       expect(Ptrace::Binding).to receive(:safe_ptrace).with(Ptrace::Constants::PTRACE_DETACH, 4321, 0, 0)
       expect(tracee.detach).to eq(tracee)
