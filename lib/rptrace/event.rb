@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # waitpid status wrapper with ptrace-specific helpers.
   class Event
     # ptrace event code to symbolic name map for inspect output.

@@ -2,7 +2,7 @@
 
 require "fcntl"
 
-module Ptrace
+module Rptrace
   # Renderable syscall event (enter/exit).
   class SyscallEvent
     # Map of errno number to symbolic name (e.g., 2 => "ENOENT").
@@ -179,7 +179,7 @@ module Ptrace
       return "NULL" if pointer_null?(value)
 
       tracee.memory.read_string(Integer(value)).inspect
-    rescue Ptrace::Error, StandardError
+    rescue Rptrace::Error, StandardError
       format_pointer(value)
     end
 

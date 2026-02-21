@@ -2,7 +2,7 @@
 
 require "rbconfig"
 
-module Ptrace
+module Rptrace
   # Architecture-specific register layouts and binary helpers.
   module CStructs
     # Host pointer width in bytes.
@@ -130,7 +130,7 @@ module Ptrace
     end
 
     # @return [Symbol]
-    # @raise [Ptrace::UnsupportedArchError]
+    # @raise [Rptrace::UnsupportedArchError]
     def detect_arch
       host_cpu = RbConfig::CONFIG.fetch("host_cpu", "")
 

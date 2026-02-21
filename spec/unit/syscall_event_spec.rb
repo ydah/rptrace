@@ -2,13 +2,13 @@
 
 require "fcntl"
 
-RSpec.describe Ptrace::SyscallEvent do
-  let(:memory) { instance_double(Ptrace::Memory) }
-  let(:tracee) { instance_double(Ptrace::Tracee, memory: memory) }
+RSpec.describe Rptrace::SyscallEvent do
+  let(:memory) { instance_double(Rptrace::Memory) }
+  let(:tracee) { instance_double(Rptrace::Tracee, memory: memory) }
 
   describe "#to_s" do
     it "formats enter event with decoded string pointer arguments" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 257,
         name: :openat,
         arg_names: %i[dirfd pathname flags mode],
@@ -31,7 +31,7 @@ RSpec.describe Ptrace::SyscallEvent do
     end
 
     it "formats syscall errors like strace" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 2,
         name: :open,
         arg_names: %i[pathname flags mode],
@@ -51,13 +51,13 @@ RSpec.describe Ptrace::SyscallEvent do
     end
 
     it "falls back to pointer output when reading string fails" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 59,
         name: :execve,
         arg_names: %i[filename argv envp],
         arg_types: %i[str ptr ptr]
       )
-      allow(memory).to receive(:read_string).with(0x7000).and_raise(Ptrace::Error.new("failed"))
+      allow(memory).to receive(:read_string).with(0x7000).and_raise(Rptrace::Error.new("failed"))
 
       event = described_class.new(
         tracee: tracee,
@@ -70,28 +70,28 @@ RSpec.describe Ptrace::SyscallEvent do
     end
 
     it "formats normal numeric return values" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(number: 0, name: :read, arg_names: %i[fd], arg_types: %i[fd])
+      syscall = Rptrace::Syscall::SyscallInfo.new(number: 0, name: :read, arg_names: %i[fd], arg_types: %i[fd])
       event = described_class.new(tracee: tracee, syscall: syscall, args: [3], phase: :exit, return_value: 12)
 
       expect(event.to_s).to eq("read(3) = 12")
     end
 
     it "formats nil return as unknown marker" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(number: 60, name: :exit, arg_names: %i[status], arg_types: %i[int])
+      syscall = Rptrace::Syscall::SyscallInfo.new(number: 60, name: :exit, arg_names: %i[status], arg_types: %i[int])
       event = described_class.new(tracee: tracee, syscall: syscall, args: [0], phase: :exit, return_value: nil)
 
       expect(event.to_s).to eq("exit(0) = ?")
     end
 
     it "formats non-pointer/non-integer values with inspect fallback" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(number: 999, name: :custom, arg_names: [:obj], arg_types: [:unknown])
+      syscall = Rptrace::Syscall::SyscallInfo.new(number: 999, name: :custom, arg_names: [:obj], arg_types: [:unknown])
       event = described_class.new(tracee: tracee, syscall: syscall, args: [%w[a b]], phase: :enter)
 
       expect(event.to_s).to eq("custom([\"a\", \"b\"]) ...")
     end
 
     it "keeps non-open flags as hex" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 16,
         name: :ioctl,
         arg_names: %i[fd request argp],
@@ -108,7 +108,7 @@ RSpec.describe Ptrace::SyscallEvent do
       stub_const("#{described_class}::MAP_TYPE_NAMES", {1 => "MAP_SHARED", 2 => "MAP_PRIVATE"})
       stub_const("#{described_class}::MAP_FLAG_NAMES", {0x20 => "MAP_ANONYMOUS"})
 
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 9,
         name: :mmap,
         arg_names: %i[addr length prot flags fd offset],
@@ -134,7 +134,7 @@ RSpec.describe Ptrace::SyscallEvent do
       stub_const("#{described_class}::MAP_TYPE_NAMES", {1 => "MAP_SHARED", 2 => "MAP_PRIVATE"})
       stub_const("#{described_class}::MAP_FLAG_NAMES", {0x20 => "MAP_ANONYMOUS"})
 
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 9,
         name: :mmap,
         arg_names: %i[addr length prot flags fd offset],
@@ -156,7 +156,7 @@ RSpec.describe Ptrace::SyscallEvent do
     end
 
     it "decodes clone flags and exit signal names" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 56,
         name: :clone,
         arg_names: %i[flags child_stack ptid ctid newtls],
@@ -176,7 +176,7 @@ RSpec.describe Ptrace::SyscallEvent do
     end
 
     it "shows unknown clone flag bits as hex residue" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 56,
         name: :clone,
         arg_names: %i[flags child_stack ptid ctid newtls],
@@ -193,7 +193,7 @@ RSpec.describe Ptrace::SyscallEvent do
     end
 
     it "decodes wait4 option flags" do
-      syscall = Ptrace::Syscall::SyscallInfo.new(
+      syscall = Rptrace::Syscall::SyscallInfo.new(
         number: 61,
         name: :wait4,
         arg_names: %i[pid stat_addr options rusage],
@@ -202,7 +202,7 @@ RSpec.describe Ptrace::SyscallEvent do
       event = described_class.new(
         tracee: tracee,
         syscall: syscall,
-        args: [1234, 0, Ptrace::Constants::WNOHANG | Ptrace::Constants::WUNTRACED, 0],
+        args: [1234, 0, Rptrace::Constants::WNOHANG | Rptrace::Constants::WUNTRACED, 0],
         phase: :enter
       )
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Base error for ptrace operations.
   class Error < StandardError
     attr_reader :errno, :request

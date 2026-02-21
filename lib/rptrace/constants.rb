@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Linux ptrace and waitpid-related constants.
   module Constants
     NT_PRSTATUS = 1

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Memory do
-  let(:tracee) { instance_double(Ptrace::Tracee, pid: 4321) }
+RSpec.describe Rptrace::Memory do
+  let(:tracee) { instance_double(Rptrace::Tracee, pid: 4321) }
   let(:memory) { described_class.new(tracee) }
   let(:word_size) { described_class::WORD_SIZE }
   let(:pack_format) { word_size == 8 ? "Q<" : "L<" }
@@ -26,11 +26,11 @@ RSpec.describe Ptrace::Memory do
       0x1008 => to_word.call("IJKLMNOP")
     }
 
-    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
+    allow(Rptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
       case request
-      when Ptrace::Constants::PTRACE_PEEKDATA
+      when Rptrace::Constants::PTRACE_PEEKDATA
         words.fetch(addr)
-      when Ptrace::Constants::PTRACE_POKEDATA
+      when Rptrace::Constants::PTRACE_POKEDATA
         words[addr] = Integer(data)
         0
       else
@@ -49,11 +49,11 @@ RSpec.describe Ptrace::Memory do
       0x3008 => to_word.call("IJKLMNOP")
     }
 
-    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
+    allow(Rptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
       case request
-      when Ptrace::Constants::PTRACE_PEEKDATA
+      when Rptrace::Constants::PTRACE_PEEKDATA
         words.fetch(addr)
-      when Ptrace::Constants::PTRACE_POKEDATA
+      when Rptrace::Constants::PTRACE_POKEDATA
         words[addr] = Integer(data)
         0
       else
@@ -74,11 +74,11 @@ RSpec.describe Ptrace::Memory do
       0x4000 + word_size => to_word.call("rest")
     }
 
-    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
+    allow(Rptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
       case request
-      when Ptrace::Constants::PTRACE_PEEKDATA
+      when Rptrace::Constants::PTRACE_PEEKDATA
         words.fetch(addr)
-      when Ptrace::Constants::PTRACE_POKEDATA
+      when Rptrace::Constants::PTRACE_POKEDATA
         words[addr] = Integer(data)
         0
       else
@@ -111,9 +111,9 @@ RSpec.describe Ptrace::Memory do
       0x5000 + word_size => to_word.call("IJKLMNOP")
     }
 
-    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, _data|
+    allow(Rptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, _data|
       case request
-      when Ptrace::Constants::PTRACE_PEEKDATA
+      when Rptrace::Constants::PTRACE_PEEKDATA
         words.fetch(addr)
       else
         raise "unexpected request: #{request}"
@@ -125,11 +125,11 @@ RSpec.describe Ptrace::Memory do
 
   it "supports [] and []= helpers" do
     writes = {}
-    allow(Ptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
+    allow(Rptrace::Binding).to receive(:safe_ptrace) do |request, _pid, addr, data|
       case request
-      when Ptrace::Constants::PTRACE_PEEKDATA
+      when Rptrace::Constants::PTRACE_PEEKDATA
         writes.fetch(addr, 0x11223344)
-      when Ptrace::Constants::PTRACE_POKEDATA
+      when Rptrace::Constants::PTRACE_POKEDATA
         writes[addr] = Integer(data)
         0
       else

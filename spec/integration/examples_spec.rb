@@ -13,7 +13,7 @@ RSpec.describe "examples" do
   end
 
   def ensure_integration_environment!
-    skip "linux-only integration spec" unless Ptrace.linux?
+    skip "linux-only integration spec" unless Rptrace.linux?
     return if ENV[integration_env] == "1"
 
     skip "set #{integration_env}=1 to run ptrace integration specs"
@@ -21,7 +21,7 @@ RSpec.describe "examples" do
 
   def with_ptrace_permission
     yield
-  rescue Ptrace::PermissionError => e
+  rescue Rptrace::PermissionError => e
     skip "ptrace permission required: #{e.message}"
   end
 

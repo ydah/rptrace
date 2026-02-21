@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Built-in syscall number table modules.
   module SyscallTable
     # x86_64 syscall table.
     module X86_64
-      # @return [Hash{Integer => Ptrace::Syscall::SyscallInfo}]
+      # @return [Hash{Integer => Rptrace::Syscall::SyscallInfo}]
       TABLE = {
         0 => Syscall::SyscallInfo.new(number: 0, name: :read, arg_names: [], arg_types: []),
         1 => Syscall::SyscallInfo.new(number: 1, name: :write, arg_names: [], arg_types: []),
@@ -51,7 +51,7 @@ module Ptrace
         269 => Syscall::SyscallInfo.new(number: 269, name: :faccessat, arg_names: [], arg_types: [])
       }.freeze
 
-      # @return [Hash{Symbol => Ptrace::Syscall::SyscallInfo}]
+      # @return [Hash{Symbol => Rptrace::Syscall::SyscallInfo}]
       BY_NAME = TABLE.each_with_object({}) do |(_number, info), map|
         map[info.name] = info
       end.freeze

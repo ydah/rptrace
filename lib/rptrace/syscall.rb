@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Syscall metadata lookup and argument templates.
   module Syscall
     # Syscall metadata record.

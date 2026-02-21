@@ -1,6 +1,6 @@
-# ptrace-ruby
+# rptrace
 
-`ptrace-ruby` is a Ruby wrapper for Linux `ptrace(2)` focused on building tracers and debugger-like tooling with a Ruby-friendly API.
+`rptrace` is a Ruby wrapper for Linux `ptrace(2)` focused on building tracers and debugger-like tooling with a Ruby-friendly API.
 
 ## Overview and Motivation
 
@@ -12,13 +12,13 @@ Linux `ptrace(2)` is powerful but low-level. This gem wraps process control, reg
 
 ## Features
 
-- Top-level namespace is `Ptrace` (no `Ptrace::Ruby` nesting)
+- Top-level namespace is `Rptrace` (no `Rptrace::Ruby` nesting)
 - `Tracee` API for `spawn`, `attach`, `cont`, `syscall`, `detach`, and `wait`
 - Register and memory wrappers (`Registers`, `Memory`)
 - `/proc/<pid>/maps` parser (`ProcMaps`, `Tracee#memory_maps`)
 - Software breakpoints on x86_64 (`Tracee#set_breakpoint`, `remove_breakpoint`)
-- Syscall lookup (`Ptrace::Syscall`) for `x86_64`/`aarch64`
-- High-level tracing helper `Ptrace.strace` (`follow_children` / `yield_seccomp` supported)
+- Syscall lookup (`Rptrace::Syscall`) for `x86_64`/`aarch64`
+- High-level tracing helper `Rptrace.strace` (`follow_children` / `yield_seccomp` supported)
 - ptrace event helpers (`Tracee#event_message`, `Tracee#seccomp_data`, `Tracee#seccomp_metadata`, `Tracee#seccomp_filter`)
 
 ## Installation
@@ -26,7 +26,7 @@ Linux `ptrace(2)` is powerful but low-level. This gem wraps process control, reg
 Add this line to your application's Gemfile:
 
 ```ruby
-gem "ptrace-ruby"
+gem "rptrace"
 ```
 
 And then execute:
@@ -38,9 +38,9 @@ bundle install
 ## Quick Start
 
 ```ruby
-require "ptrace"
+require "rptrace"
 
-Ptrace.strace("/bin/ls", "-la", "/tmp") do |event|
+Rptrace.strace("/bin/ls", "-la", "/tmp") do |event|
   next unless event.exit?
 
   puts event
@@ -50,7 +50,7 @@ end
 Follow child processes/threads (clone/fork/vfork):
 
 ```ruby
-Ptrace.strace("/usr/bin/ruby", "-e", "pid = fork { sleep 0.1 }; Process.wait(pid)", follow_children: true) do |event|
+Rptrace.strace("/usr/bin/ruby", "-e", "pid = fork { sleep 0.1 }; Process.wait(pid)", follow_children: true) do |event|
   next unless event.enter?
   puts "pid=#{event.tracee.pid} #{event.syscall.name}"
 end
@@ -59,11 +59,11 @@ end
 Include seccomp stop events in trace stream:
 
 ```ruby
-Ptrace.strace("/bin/ls", "/tmp", yield_seccomp: true) do |event|
+Rptrace.strace("/bin/ls", "/tmp", yield_seccomp: true) do |event|
   case event
-  when Ptrace::SyscallEvent
+  when Rptrace::SyscallEvent
     puts event if event.exit?
-  when Ptrace::SeccompEvent
+  when Rptrace::SeccompEvent
     warn event.to_s
   end
 end
@@ -72,7 +72,7 @@ end
 Set and clear a software breakpoint (x86_64):
 
 ```ruby
-tracee = Ptrace::Tracee.attach(target_pid)
+tracee = Rptrace::Tracee.attach(target_pid)
 bp = tracee.set_breakpoint(0x401000)
 # ...
 bp.restore
@@ -81,7 +81,7 @@ bp.restore
 Inspect seccomp filter metadata and decoded BPF instructions:
 
 ```ruby
-tracee = Ptrace::Tracee.attach(target_pid)
+tracee = Rptrace::Tracee.attach(target_pid)
 tracee.enable_seccomp_events!
 supported = tracee.seccomp_supported?
 available = tracee.seccomp_filter_available?(index: 0)
@@ -107,14 +107,14 @@ PTRACE_RUN_INTEGRATION=1 bundle exec rspec spec/integration
 You can inspect local ptrace capability setup from Ruby:
 
 ```ruby
-diagnostics = Ptrace.ptrace_permissions
+diagnostics = Rptrace.ptrace_permissions
 puts diagnostics # => { ptrace_privileged:, cap_sys_ptrace:, yama_ptrace_scope:, hints: [...] }
 ```
 
 Fail fast with an actionable permission error:
 
 ```ruby
-Ptrace.ensure_ptrace_privileged!(request: :attach)
+Rptrace.ensure_ptrace_privileged!(request: :attach)
 ```
 
 ## Examples
@@ -138,7 +138,7 @@ bundle exec rspec
 Run specs with coverage threshold check:
 
 ```bash
-COVERAGE=1 COVERAGE_MIN_LINE=95 bundle exec rspec spec/unit spec/ptrace_spec.rb
+COVERAGE=1 COVERAGE_MIN_LINE=95 bundle exec rspec spec/unit spec/rptrace_spec.rb
 ```
 
 Generate syscall tables from Linux headers (`x86_64` / `aarch64`):

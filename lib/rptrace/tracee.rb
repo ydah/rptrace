@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Traced process handle for process control, register, and memory access.
   class Tracee
     attr_reader :pid, :registers, :memory
@@ -42,7 +42,7 @@ module Ptrace
     # @param command [String]
     # @param args [Array<String>]
     # @param options [Integer] ptrace option mask for PTRACE_SETOPTIONS
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def self.spawn(command, *args, options: DEFAULT_TRACE_OPTIONS)
       child_pid = Process.fork do
         Binding.safe_ptrace(Constants::PTRACE_TRACEME, 0, 0, 0)
@@ -64,7 +64,7 @@ module Ptrace
     #
     # @param pid [Integer]
     # @param options [Integer] ptrace option mask for PTRACE_SETOPTIONS
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def self.attach(pid, options: DEFAULT_TRACE_OPTIONS)
       pid = Integer(pid)
       Binding.safe_ptrace(Constants::PTRACE_ATTACH, pid, 0, 0)
@@ -79,7 +79,7 @@ module Ptrace
     #
     # @param pid [Integer]
     # @param options [Integer] ptrace seize options
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def self.seize(pid, options: 0)
       pid = Integer(pid)
       Binding.safe_ptrace(Constants::PTRACE_SEIZE, pid, 0, options)
@@ -89,7 +89,7 @@ module Ptrace
     # Waits for any traced process/thread state change.
     #
     # @param flags [Integer] waitpid flags
-    # @return [Ptrace::Event]
+    # @return [Rptrace::Event]
     def self.wait_any(flags: 0)
       waited_pid, status = Binding.safe_waitpid(-1, flags: flags)
       Event.new(waited_pid, status)
@@ -98,7 +98,7 @@ module Ptrace
     # Continue process execution.
     #
     # @param signal [Integer] signal number to inject
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def cont(signal: 0)
       request(Constants::PTRACE_CONT, signal)
       self
@@ -107,7 +107,7 @@ module Ptrace
     # Resume process until next syscall stop.
     #
     # @param signal [Integer] signal number to inject
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def syscall(signal: 0)
       request(Constants::PTRACE_SYSCALL, signal)
       self
@@ -116,7 +116,7 @@ module Ptrace
     # Single-step one instruction.
     #
     # @param signal [Integer] signal number to inject
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def singlestep(signal: 0)
       request(Constants::PTRACE_SINGLESTEP, signal)
       self
@@ -125,7 +125,7 @@ module Ptrace
     # Detach from process.
     #
     # @param signal [Integer] signal number to deliver on detach
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def detach(signal: 0)
       request(Constants::PTRACE_DETACH, signal)
       self
@@ -133,7 +133,7 @@ module Ptrace
 
     # Interrupt a seized process.
     #
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def interrupt
       request(Constants::PTRACE_INTERRUPT, 0)
       self
@@ -141,7 +141,7 @@ module Ptrace
 
     # Resumes a tracee in ptrace-listen mode.
     #
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def listen
       request(Constants::PTRACE_LISTEN, 0)
       self
@@ -150,7 +150,7 @@ module Ptrace
     # Sets ptrace options mask for this tracee.
     #
     # @param options [Integer] bitmask of PTRACE_O_* flags
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def set_options(options)
       Binding.safe_ptrace(Constants::PTRACE_SETOPTIONS, pid, 0, Integer(options))
       self
@@ -158,7 +158,7 @@ module Ptrace
 
     # Enables seccomp tracing with syscall-stop distinction.
     #
-    # @return [Ptrace::Tracee]
+    # @return [Rptrace::Tracee]
     def enable_seccomp_events!
       set_options(Constants::PTRACE_O_TRACESYSGOOD | Constants::PTRACE_O_TRACESECCOMP)
     end
@@ -173,7 +173,7 @@ module Ptrace
     # Wait for process state change.
     #
     # @param flags [Integer] waitpid flags
-    # @return [Ptrace::Event]
+    # @return [Rptrace::Event]
     def wait(flags: 0)
       waited_pid, status = Binding.safe_waitpid(pid, flags: flags)
       Event.new(waited_pid, status)
@@ -182,7 +182,7 @@ module Ptrace
     # Current syscall metadata.
     #
     # @param arch [Symbol]
-    # @return [Ptrace::Syscall::SyscallInfo]
+    # @return [Rptrace::Syscall::SyscallInfo]
     def current_syscall(arch: CStructs.arch)
       layout = syscall_layout(arch)
       Syscall.from_number(registers[layout.fetch(:number)], arch: arch)
@@ -208,7 +208,7 @@ module Ptrace
 
     # Parses current process memory mappings from /proc/<pid>/maps.
     #
-    # @return [Array<Ptrace::ProcMaps::Mapping>]
+    # @return [Array<Rptrace::ProcMaps::Mapping>]
     def memory_maps
       ProcMaps.read(pid)
     end
@@ -288,7 +288,7 @@ module Ptrace
 
     # Returns active software breakpoints.
     #
-    # @return [Array<Ptrace::Breakpoint>]
+    # @return [Array<Rptrace::Breakpoint>]
     def breakpoints
       breakpoint_store.values
     end
@@ -296,7 +296,7 @@ module Ptrace
     # Looks up an active software breakpoint by address.
     #
     # @param address [Integer]
-    # @return [Ptrace::Breakpoint, nil]
+    # @return [Rptrace::Breakpoint, nil]
     def breakpoint(address)
       breakpoint_store[Integer(address)]
     end
@@ -312,7 +312,7 @@ module Ptrace
     # Returns current breakpoint at instruction pointer trap site.
     #
     # @param arch [Symbol]
-    # @return [Ptrace::Breakpoint, nil]
+    # @return [Rptrace::Breakpoint, nil]
     def current_breakpoint(arch: CStructs.arch)
       return nil unless arch.to_sym == :x86_64
 
@@ -326,8 +326,8 @@ module Ptrace
     # Installs an x86_64 INT3 software breakpoint.
     #
     # @param address [Integer]
-    # @return [Ptrace::Breakpoint]
-    # @raise [Ptrace::UnsupportedArchError]
+    # @return [Rptrace::Breakpoint]
+    # @raise [Rptrace::UnsupportedArchError]
     def set_breakpoint(address)
       ensure_breakpoint_supported_arch!
 
@@ -343,7 +343,7 @@ module Ptrace
     # Restores a previously installed software breakpoint.
     #
     # @param address [Integer]
-    # @return [Ptrace::Breakpoint, nil]
+    # @return [Rptrace::Breakpoint, nil]
     def remove_breakpoint(address)
       addr = Integer(address)
       existing = breakpoint_store[addr]
@@ -371,9 +371,9 @@ module Ptrace
     # @param signal [Integer] signal to inject during single-step
     # @param arch [Symbol]
     # @param wait_flags [Integer]
-    # @return [Ptrace::Event]
-    # @raise [Ptrace::Error]
-    # @raise [Ptrace::UnsupportedArchError]
+    # @return [Rptrace::Event]
+    # @raise [Rptrace::Error]
+    # @raise [Rptrace::UnsupportedArchError]
     def step_over_breakpoint(signal: 0, arch: CStructs.arch, wait_flags: Constants::WALL)
       ensure_breakpoint_supported_arch!
       breakpoint = current_breakpoint(arch: arch)

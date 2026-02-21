@@ -2,9 +2,9 @@
 
 require "fileutils"
 require "tmpdir"
-require "ptrace/syscall_table/generator"
+require "rptrace/syscall_table/generator"
 
-RSpec.describe Ptrace::SyscallTable::Generator do
+RSpec.describe Rptrace::SyscallTable::Generator do
   describe ".parse_header" do
     it "extracts syscall numbers from numeric __NR defines" do
       header = <<~HEADER
@@ -40,7 +40,7 @@ RSpec.describe Ptrace::SyscallTable::Generator do
       Dir.mktmpdir do |tmpdir|
         root_dir = File.join(tmpdir, "project")
         header_path = File.join(tmpdir, "unistd_64.h")
-        output_dir = File.join(root_dir, "lib/ptrace/syscall_table")
+        output_dir = File.join(root_dir, "lib/rptrace/syscall_table")
         output_path = File.join(output_dir, "x86_64.rb")
 
         FileUtils.mkdir_p(output_dir)
@@ -80,7 +80,7 @@ RSpec.describe Ptrace::SyscallTable::Generator do
       Dir.mktmpdir do |tmpdir|
         root_dir = File.join(tmpdir, "project")
         header_path = File.join(tmpdir, "empty.h")
-        FileUtils.mkdir_p(File.join(root_dir, "lib/ptrace/syscall_table"))
+        FileUtils.mkdir_p(File.join(root_dir, "lib/rptrace/syscall_table"))
         File.write(header_path, "#define SOMETHING_ELSE 1\n")
 
         original_env = ENV["PTRACE_SYSCALL_HEADER_X86_64"]
@@ -99,7 +99,7 @@ RSpec.describe Ptrace::SyscallTable::Generator do
     it "skips missing headers when skip_missing is true" do
       Dir.mktmpdir do |tmpdir|
         root_dir = File.join(tmpdir, "project")
-        FileUtils.mkdir_p(File.join(root_dir, "lib/ptrace/syscall_table"))
+        FileUtils.mkdir_p(File.join(root_dir, "lib/rptrace/syscall_table"))
         x86_header = File.join(tmpdir, "x86.h")
         File.write(x86_header, "#define __NR_read 0\n")
 
@@ -127,7 +127,7 @@ RSpec.describe Ptrace::SyscallTable::Generator do
 
       expect do
         described_class.generate_all(arches: [:aarch64], skip_missing: false)
-      end.to raise_error(Ptrace::SyscallTable::Generator::HeaderNotFoundError)
+      end.to raise_error(Rptrace::SyscallTable::Generator::HeaderNotFoundError)
     ensure
       ENV["PTRACE_SYSCALL_HEADER_AARCH64"] = old_arm
     end
@@ -137,7 +137,7 @@ RSpec.describe Ptrace::SyscallTable::Generator do
     it "returns generated and skipped collections" do
       Dir.mktmpdir do |tmpdir|
         root_dir = File.join(tmpdir, "project")
-        FileUtils.mkdir_p(File.join(root_dir, "lib/ptrace/syscall_table"))
+        FileUtils.mkdir_p(File.join(root_dir, "lib/rptrace/syscall_table"))
         x86_header = File.join(tmpdir, "x86.h")
         File.write(x86_header, "#define __NR_read 0\n")
 

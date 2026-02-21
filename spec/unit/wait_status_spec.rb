@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::WaitStatus do
+RSpec.describe Rptrace::WaitStatus do
   it "detects normal exit" do
     status = 42 << 8
 

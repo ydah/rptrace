@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "ptrace"
+require "rptrace"
 
 if ARGV.empty?
   warn "usage: bundle exec ruby examples/syscall_counter.rb <command> [args...]"
@@ -10,7 +10,7 @@ end
 command = ARGV.shift
 counts = Hash.new(0)
 
-Ptrace.strace(command, *ARGV) do |event|
+Rptrace.strace(command, *ARGV) do |event|
   next unless event.exit?
 
   counts[event.syscall.name] += 1

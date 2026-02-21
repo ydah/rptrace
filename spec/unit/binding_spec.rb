@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Binding do
+RSpec.describe Rptrace::Binding do
   it "defines key PTRACE constants" do
     expect(described_class::PTRACE_TRACEME).to eq(0)
     expect(described_class::PTRACE_SYSCALL).to eq(24)

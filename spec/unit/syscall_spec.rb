@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Syscall do
+RSpec.describe Rptrace::Syscall do
   describe ".from_number" do
     it "returns syscall info with argument template for known x86_64 syscall" do
       info = described_class.from_number(1, arch: :x86_64)

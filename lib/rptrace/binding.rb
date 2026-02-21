@@ -3,7 +3,7 @@
 require "fiddle"
 require "fiddle/import"
 
-module Ptrace
+module Rptrace
   # Low-level libc bindings for ptrace and waitpid.
   module Binding
     extend Fiddle::Importer
@@ -16,7 +16,7 @@ module Ptrace
     extern "int fork()"
     extern "int execvp(char*, void*)"
 
-    # Maps errno values to specific Ptrace error subclasses.
+    # Maps errno values to specific Rptrace error subclasses.
     ERRNO_CLASS_MAP = {
       Errno::EPERM::Errno => PermissionError,
       Errno::ESRCH::Errno => NoProcessError,
@@ -27,7 +27,7 @@ module Ptrace
     PERMISSION_HINT = "try running as root, granting CAP_SYS_PTRACE, and checking /proc/sys/kernel/yama/ptrace_scope".freeze
 
     class << self
-      # Calls ptrace and raises mapped Ptrace::Error subclasses on failure.
+      # Calls ptrace and raises mapped Rptrace::Error subclasses on failure.
       #
       # @param request [Integer, Symbol]
       # @param pid [Integer]
@@ -68,11 +68,11 @@ module Ptrace
         Fiddle.last_error = 0
       end
 
-      # Raises a mapped Ptrace::Error subclass for an errno code.
+      # Raises a mapped Rptrace::Error subclass for an errno code.
       #
       # @param errno [Integer]
       # @param request [Integer, Symbol]
-      # @raise [Ptrace::Error]
+      # @raise [Rptrace::Error]
       # @return [void]
       def raise_ptrace_error(errno, request)
         klass = ERRNO_CLASS_MAP.fetch(errno, Error)

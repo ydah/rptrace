@@ -2,7 +2,7 @@
 
 require "fiddle"
 
-RSpec.describe Ptrace::Binding do
+RSpec.describe Rptrace::Binding do
   describe ".safe_ptrace" do
     it "returns -1 without raising when errno is 0 (PEEKDATA success case)" do
       allow(described_class).to receive(:ptrace) do
@@ -21,7 +21,7 @@ RSpec.describe Ptrace::Binding do
 
       expect do
         described_class.safe_ptrace(:attach, 1, 0, 0)
-      end.to raise_error(Ptrace::PermissionError, /CAP_SYS_PTRACE/)
+      end.to raise_error(Rptrace::PermissionError, /CAP_SYS_PTRACE/)
     end
 
     it "includes Yama guidance in PermissionError messages" do
@@ -32,7 +32,7 @@ RSpec.describe Ptrace::Binding do
 
       expect do
         described_class.safe_ptrace(:attach, 1, 0, 0)
-      end.to raise_error(Ptrace::PermissionError, /ptrace_scope/)
+      end.to raise_error(Rptrace::PermissionError, /ptrace_scope/)
     end
 
     it "maps unknown errno to generic Error" do
@@ -43,7 +43,7 @@ RSpec.describe Ptrace::Binding do
 
       expect do
         described_class.safe_ptrace(:attach, 1, 0, 0)
-      end.to raise_error(Ptrace::Error)
+      end.to raise_error(Rptrace::Error)
     end
   end
 
@@ -66,7 +66,7 @@ RSpec.describe Ptrace::Binding do
         -1
       end
 
-      expect { described_class.safe_waitpid(123, flags: 0) }.to raise_error(Ptrace::NoProcessError)
+      expect { described_class.safe_waitpid(123, flags: 0) }.to raise_error(Rptrace::NoProcessError)
     end
   end
 end

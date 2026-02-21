@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   class << self
     # Default option set to follow fork/clone descendants.
     FOLLOW_CHILD_TRACE_OPTIONS = Tracee::DEFAULT_TRACE_OPTIONS |
@@ -13,7 +13,7 @@ module Ptrace
     # @param command [String] executable path or command name
     # @param args [Array<String>] command arguments
     # @param options [Integer] ptrace options passed to Tracee.spawn
-    # @yieldparam tracee [Ptrace::Tracee]
+    # @yieldparam tracee [Rptrace::Tracee]
     # @return [Object] block return value
     def trace(command, *args, options: Tracee::DEFAULT_TRACE_OPTIONS)
       tracee = Tracee.spawn(command, *args, options: options)
@@ -27,8 +27,8 @@ module Ptrace
     # @param command [String] executable path or command name
     # @param args [Array<String>] command arguments
     # @param follow_children [Boolean] follow clone/fork/vfork descendants
-    # @param yield_seccomp [Boolean] yield seccomp stop events as {Ptrace::SeccompEvent}
-    # @yieldparam event [Ptrace::SyscallEvent, Ptrace::SeccompEvent]
+    # @param yield_seccomp [Boolean] yield seccomp stop events as {Rptrace::SeccompEvent}
+    # @yieldparam event [Rptrace::SyscallEvent, Rptrace::SeccompEvent]
     # @return [void]
     def strace(command, *args, follow_children: false, yield_seccomp: false)
       options = follow_children ? FOLLOW_CHILD_TRACE_OPTIONS : Tracee::DEFAULT_TRACE_OPTIONS

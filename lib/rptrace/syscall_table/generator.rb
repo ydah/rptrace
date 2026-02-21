@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   module SyscallTable
     # Generates syscall table Ruby files from Linux unistd headers.
     module Generator
@@ -13,7 +13,7 @@ module Ptrace
       ARCH_CONFIG = {
         x86_64: {
           module_name: "X86_64",
-          output_path: "lib/ptrace/syscall_table/x86_64.rb",
+          output_path: "lib/rptrace/syscall_table/x86_64.rb",
           env_key: "PTRACE_SYSCALL_HEADER_X86_64",
           header_candidates: [
             "/usr/include/x86_64-linux-gnu/asm/unistd_64.h",
@@ -23,7 +23,7 @@ module Ptrace
         }.freeze,
         aarch64: {
           module_name: "AARCH64",
-          output_path: "lib/ptrace/syscall_table/aarch64.rb",
+          output_path: "lib/rptrace/syscall_table/aarch64.rb",
           env_key: "PTRACE_SYSCALL_HEADER_AARCH64",
           header_candidates: [
             "/usr/include/aarch64-linux-gnu/asm/unistd.h",
@@ -132,7 +132,7 @@ module Ptrace
         <<~RUBY
           # frozen_string_literal: true
 
-          module Ptrace
+          module Rptrace
             module SyscallTable
               module #{module_name}
                 TABLE = {

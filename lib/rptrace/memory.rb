@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Memory accessor for traced process address space.
   class Memory
     WORD_SIZE = begin

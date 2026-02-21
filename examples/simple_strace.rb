@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "ptrace"
+require "rptrace"
 
 if ARGV.empty?
   warn "usage: bundle exec ruby examples/simple_strace.rb <command> [args...]"
@@ -9,7 +9,7 @@ end
 
 command = ARGV.shift
 
-Ptrace.strace(command, *ARGV) do |event|
+Rptrace.strace(command, *ARGV) do |event|
   next unless event.exit?
 
   puts event

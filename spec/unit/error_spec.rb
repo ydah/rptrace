@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Error do
+RSpec.describe Rptrace::Error do
   it "formats ptrace context when errno and request are present" do
     error = described_class.new("Permission denied", errno: 1, request: :attach)
 

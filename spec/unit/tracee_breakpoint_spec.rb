@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Tracee do
+RSpec.describe Rptrace::Tracee do
   let(:tracee) { described_class.allocate }
-  let(:memory) { instance_double(Ptrace::Memory) }
-  let(:registers) { instance_double(Ptrace::Registers) }
+  let(:memory) { instance_double(Rptrace::Memory) }
+  let(:registers) { instance_double(Rptrace::Registers) }
 
   before do
     tracee.instance_variable_set(:@pid, 4321)
@@ -13,7 +13,7 @@ RSpec.describe Ptrace::Tracee do
 
   describe "software breakpoints" do
     before do
-      allow(Ptrace::CStructs).to receive(:arch).and_return(:x86_64)
+      allow(Rptrace::CStructs).to receive(:arch).and_return(:x86_64)
     end
 
     it "installs an INT3 opcode and stores original byte" do
@@ -22,7 +22,7 @@ RSpec.describe Ptrace::Tracee do
 
       breakpoint = tracee.set_breakpoint(0x401000)
 
-      expect(breakpoint).to be_a(Ptrace::Breakpoint)
+      expect(breakpoint).to be_a(Rptrace::Breakpoint)
       expect(breakpoint.address).to eq(0x401000)
       expect(breakpoint.original_byte).to eq("\x55".b)
       expect(tracee.breakpoint(0x401000)).to eq(breakpoint)
@@ -30,7 +30,7 @@ RSpec.describe Ptrace::Tracee do
     end
 
     it "reuses existing enabled breakpoint without touching memory" do
-      existing = Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)
+      existing = Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)
       tracee.instance_variable_set(:@breakpoint_store, {0x401000 => existing})
 
       expect(memory).not_to receive(:read)
@@ -40,7 +40,7 @@ RSpec.describe Ptrace::Tracee do
     end
 
     it "restores original byte when removing breakpoint" do
-      breakpoint = Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)
+      breakpoint = Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)
       tracee.instance_variable_set(:@breakpoint_store, {0x401000 => breakpoint})
       expect(memory).to receive(:write).with(0x401000, "\x55".b)
 
@@ -58,8 +58,8 @@ RSpec.describe Ptrace::Tracee do
     end
 
     it "clears all active breakpoints and returns count" do
-      bp1 = Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)
-      bp2 = Ptrace::Breakpoint.new(tracee: tracee, address: 0x402000, original_byte: "\x48".b)
+      bp1 = Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)
+      bp2 = Rptrace::Breakpoint.new(tracee: tracee, address: 0x402000, original_byte: "\x48".b)
       tracee.instance_variable_set(:@breakpoint_store, {0x401000 => bp1, 0x402000 => bp2})
       expect(memory).to receive(:write).with(0x401000, "\x55".b)
       expect(memory).to receive(:write).with(0x402000, "\x48".b)
@@ -69,14 +69,14 @@ RSpec.describe Ptrace::Tracee do
     end
 
     it "looks up breakpoints by integerized address" do
-      breakpoint = Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)
+      breakpoint = Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)
       tracee.instance_variable_set(:@breakpoint_store, {0x401000 => breakpoint})
 
       expect(tracee.breakpoint("4198400")).to eq(breakpoint)
     end
 
     it "detects current breakpoint hit at rip - 1" do
-      breakpoint = Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)
+      breakpoint = Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)
       tracee.instance_variable_set(:@breakpoint_store, {0x401000 => breakpoint})
       allow(registers).to receive(:[]).with(:rip).and_return(0x401001)
 
@@ -85,7 +85,7 @@ RSpec.describe Ptrace::Tracee do
     end
 
     it "returns false for breakpoint_hit? when rip is not on known trap site" do
-      tracee.instance_variable_set(:@breakpoint_store, {0x401000 => Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)})
+      tracee.instance_variable_set(:@breakpoint_store, {0x401000 => Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x90".b)})
       allow(registers).to receive(:[]).with(:rip).and_return(0x500000)
 
       expect(tracee.breakpoint_hit?).to be(false)
@@ -93,18 +93,18 @@ RSpec.describe Ptrace::Tracee do
     end
 
     it "steps over a currently hit breakpoint and reinstalls it" do
-      breakpoint = Ptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)
+      breakpoint = Rptrace::Breakpoint.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)
       tracee.instance_variable_set(:@breakpoint_store, {0x401000 => breakpoint})
       allow(registers).to receive(:[]).with(:rip).and_return(0x401001)
       expect(memory).to receive(:write).with(0x401000, "\x55".b).ordered
       expect(registers).to receive(:write).with(rip: 0x401000).ordered
-      expect(Ptrace::Binding).to receive(:safe_ptrace).with(Ptrace::Constants::PTRACE_SINGLESTEP, 4321, 0, 0).ordered
-      allow(Ptrace::Binding).to receive(:safe_waitpid).with(4321, flags: Ptrace::Constants::WALL).and_return([4321, 0x57F])
+      expect(Rptrace::Binding).to receive(:safe_ptrace).with(Rptrace::Constants::PTRACE_SINGLESTEP, 4321, 0, 0).ordered
+      allow(Rptrace::Binding).to receive(:safe_waitpid).with(4321, flags: Rptrace::Constants::WALL).and_return([4321, 0x57F])
       expect(memory).to receive(:write).with(0x401000, "\xCC".b).ordered
 
       event = tracee.step_over_breakpoint
 
-      expect(event).to be_a(Ptrace::Event)
+      expect(event).to be_a(Rptrace::Event)
       expect(event.pid).to eq(4321)
     end
 
@@ -113,18 +113,18 @@ RSpec.describe Ptrace::Tracee do
 
       expect do
         tracee.step_over_breakpoint
-      end.to raise_error(Ptrace::Error, /no active breakpoint/)
+      end.to raise_error(Rptrace::Error, /no active breakpoint/)
     end
   end
 
   it "rejects software breakpoint install on non-x86_64 architecture" do
-    allow(Ptrace::CStructs).to receive(:arch).and_return(:aarch64)
+    allow(Rptrace::CStructs).to receive(:arch).and_return(:aarch64)
 
     expect(memory).not_to receive(:read)
     expect(memory).not_to receive(:write)
     expect do
       tracee.set_breakpoint(0x401000)
-    end.to raise_error(Ptrace::UnsupportedArchError, /supported only on x86_64/)
+    end.to raise_error(Rptrace::UnsupportedArchError, /supported only on x86_64/)
   end
 
   it "returns no current breakpoint on non-x86_64 architecture" do
@@ -133,10 +133,10 @@ RSpec.describe Ptrace::Tracee do
   end
 
   it "rejects step_over_breakpoint on non-x86_64 architecture" do
-    allow(Ptrace::CStructs).to receive(:arch).and_return(:aarch64)
+    allow(Rptrace::CStructs).to receive(:arch).and_return(:aarch64)
 
     expect do
       tracee.step_over_breakpoint
-    end.to raise_error(Ptrace::UnsupportedArchError, /supported only on x86_64/)
+    end.to raise_error(Rptrace::UnsupportedArchError, /supported only on x86_64/)
   end
 end

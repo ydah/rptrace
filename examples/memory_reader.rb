@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "ptrace"
+require "rptrace"
 
 pid_str = ARGV.shift || begin
   warn "usage: bundle exec ruby examples/memory_reader.rb <pid> [address_hex] [length]"
@@ -31,7 +31,7 @@ end
 length = Integer(length_arg, 10)
 raise ArgumentError, "length must be positive" if length <= 0
 
-tracee = Ptrace::Tracee.attach(pid)
+tracee = Rptrace::Tracee.attach(pid)
 
 begin
   candidates = []
@@ -39,7 +39,7 @@ begin
     candidates << requested_address
   else
     registers = tracee.registers.read
-    arch_candidates = case Ptrace::CStructs.arch
+    arch_candidates = case Rptrace::CStructs.arch
                       when :x86_64 then [registers[:rdi], registers[:rsp]]
                       when :aarch64 then [registers[:x0], registers[:sp]]
                       else []
@@ -55,7 +55,7 @@ begin
   address = candidates.find do |candidate|
     tracee.memory.read(candidate, 1)
     true
-  rescue Ptrace::Error
+  rescue Rptrace::Error
     false
   end
 

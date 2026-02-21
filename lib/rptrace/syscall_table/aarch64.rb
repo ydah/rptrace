@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   module SyscallTable
     # aarch64 syscall table.
     module AARCH64
-      # @return [Hash{Integer => Ptrace::Syscall::SyscallInfo}]
+      # @return [Hash{Integer => Rptrace::Syscall::SyscallInfo}]
       TABLE = {
         56 => Syscall::SyscallInfo.new(number: 56, name: :openat, arg_names: %i[dirfd pathname flags mode], arg_types: %i[fd str flags mode]),
         57 => Syscall::SyscallInfo.new(number: 57, name: :close, arg_names: %i[fd], arg_types: %i[fd]),
@@ -15,7 +15,7 @@ module Ptrace
         221 => Syscall::SyscallInfo.new(number: 221, name: :execve, arg_names: %i[filename argv envp], arg_types: %i[str ptr ptr])
       }.freeze
 
-      # @return [Hash{Symbol => Ptrace::Syscall::SyscallInfo}]
+      # @return [Hash{Symbol => Rptrace::Syscall::SyscallInfo}]
       BY_NAME = TABLE.each_with_object({}) do |(_number, info), map|
         map[info.name] = info
       end.freeze

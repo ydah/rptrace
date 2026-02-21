@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Parser for Linux /proc/<pid>/maps entries.
   module ProcMaps
     # Parsed memory mapping row from /proc/<pid>/maps.

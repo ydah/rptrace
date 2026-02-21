@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::SeccompEvent do
-  let(:tracee) { instance_double(Ptrace::Tracee, pid: 4321) }
-  let(:syscall) { Ptrace::Syscall::SyscallInfo.new(number: 257, name: :openat, arg_names: [], arg_types: []) }
+RSpec.describe Rptrace::SeccompEvent do
+  let(:tracee) { instance_double(Rptrace::Tracee, pid: 4321) }
+  let(:syscall) { Rptrace::Syscall::SyscallInfo.new(number: 257, name: :openat, arg_names: [], arg_types: []) }
 
   it "stores seccomp event fields" do
     event = described_class.new(tracee: tracee, syscall: syscall, data: 0xABCD, metadata_flags: %i[tsync log])

@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-require_relative "lib/ptrace/version"
+require_relative "lib/rptrace/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "ptrace-ruby"
-  spec.version = Ptrace::VERSION
+  spec.name = "rptrace"
+  spec.version = Rptrace::VERSION
   spec.authors = ["Yudai Takada"]
   spec.email = ["t.yudai92@gmail.com"]
 
   spec.summary = "High-level Ruby wrapper for Linux ptrace(2)"
   spec.description = "Ergonomic ptrace bindings for building debuggers, tracers, and strace-like tools in Ruby."
-  spec.homepage = "https://github.com/ydah/ptrace-ruby"
+  spec.homepage = "https://github.com/ydah/rptrace"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"
   spec.platform = Gem::Platform::RUBY

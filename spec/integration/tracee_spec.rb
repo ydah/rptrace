@@ -2,11 +2,11 @@
 
 require "rbconfig"
 
-RSpec.describe Ptrace::Tracee do
+RSpec.describe Rptrace::Tracee do
   INTEGRATION_ENV = "PTRACE_RUN_INTEGRATION"
 
   def ensure_integration_environment!
-    skip "linux-only integration spec" unless Ptrace.linux?
+    skip "linux-only integration spec" unless Rptrace.linux?
     return if ENV[INTEGRATION_ENV] == "1"
 
     skip "set #{INTEGRATION_ENV}=1 to run ptrace integration specs"
@@ -14,13 +14,13 @@ RSpec.describe Ptrace::Tracee do
 
   def with_ptrace_permission
     yield
-  rescue Ptrace::PermissionError => e
+  rescue Rptrace::PermissionError => e
     skip "ptrace permission required: #{e.message}"
   end
 
   def safe_detach(tracee)
     tracee&.detach
-  rescue Ptrace::Error, Errno::ESRCH
+  rescue Rptrace::Error, Errno::ESRCH
     nil
   end
 
@@ -34,7 +34,7 @@ RSpec.describe Ptrace::Tracee do
     with_ptrace_permission do
       tracee = described_class.spawn("/bin/true")
       tracee.cont
-      event = tracee.wait(flags: Ptrace::Constants::WALL)
+      event = tracee.wait(flags: Rptrace::Constants::WALL)
 
       expect(event.exited?).to be(true)
       expect(event.exit_status).to eq(0)
@@ -49,7 +49,7 @@ RSpec.describe Ptrace::Tracee do
     with_ptrace_permission do
       tracee = described_class.spawn("/bin/echo", "hello")
       tracee.cont
-      event = tracee.wait(flags: Ptrace::Constants::WALL)
+      event = tracee.wait(flags: Rptrace::Constants::WALL)
 
       expect(event.exited?).to be(true)
       expect(event.exit_status).to eq(0)
@@ -65,7 +65,7 @@ RSpec.describe Ptrace::Tracee do
       tracee = described_class.spawn("/bin/true")
       regs = tracee.registers.read
 
-      pc_reg, sp_reg = case Ptrace::CStructs.arch
+      pc_reg, sp_reg = case Rptrace::CStructs.arch
                        when :x86_64 then %i[rip rsp]
                        when :aarch64 then %i[pc sp]
                        end
@@ -77,7 +77,7 @@ RSpec.describe Ptrace::Tracee do
       expect(bytes.bytesize).to eq(16)
 
       tracee.cont
-      event = tracee.wait(flags: Ptrace::Constants::WALL)
+      event = tracee.wait(flags: Rptrace::Constants::WALL)
       expect(event.exited?).to be(true)
     end
   ensure
@@ -89,12 +89,12 @@ RSpec.describe Ptrace::Tracee do
 
     with_ptrace_permission do
       tracee = described_class.spawn("/bin/true")
-      if Ptrace::CStructs.arch == :x86_64
+      if Rptrace::CStructs.arch == :x86_64
         rip = tracee.registers[:rip]
         tracee.set_breakpoint(rip)
         tracee.cont
 
-        trap_event = tracee.wait(flags: Ptrace::Constants::WALL)
+        trap_event = tracee.wait(flags: Rptrace::Constants::WALL)
         expect(trap_event.stopped?).to be(true)
         expect(tracee.breakpoint_hit?).to be(true)
 
@@ -104,13 +104,13 @@ RSpec.describe Ptrace::Tracee do
 
         unless stepped_event.exited? || stepped_event.signaled?
           tracee.cont
-          exit_event = tracee.wait(flags: Ptrace::Constants::WALL)
+          exit_event = tracee.wait(flags: Rptrace::Constants::WALL)
           expect(exit_event.exited? || exit_event.signaled?).to be(true)
         end
       else
         expect do
           tracee.set_breakpoint(0)
-        end.to raise_error(Ptrace::UnsupportedArchError, /supported only on x86_64/)
+        end.to raise_error(Rptrace::UnsupportedArchError, /supported only on x86_64/)
       end
     end
   ensure
@@ -126,7 +126,7 @@ RSpec.describe Ptrace::Tracee do
       seen_syscall_stop = false
       256.times do
         tracee.syscall
-        event = tracee.wait(flags: Ptrace::Constants::WALL)
+        event = tracee.wait(flags: Rptrace::Constants::WALL)
 
         break if event.exited? || event.signaled?
         next unless event.syscall_stop?
@@ -175,9 +175,9 @@ RSpec.describe Ptrace::Tracee do
 
     with_ptrace_permission do
       child_pid = Process.spawn("/bin/sleep", "2")
-      tracee = described_class.seize(child_pid, options: Ptrace::Constants::PTRACE_O_TRACESYSGOOD)
+      tracee = described_class.seize(child_pid, options: Rptrace::Constants::PTRACE_O_TRACESYSGOOD)
       tracee.interrupt
-      event = tracee.wait(flags: Ptrace::Constants::WALL)
+      event = tracee.wait(flags: Rptrace::Constants::WALL)
 
       expect(event.stopped?).to be(true)
       expect(event.exited?).to be(false)
@@ -198,11 +198,11 @@ RSpec.describe Ptrace::Tracee do
     end
   end
 
-  it "yields syscall enter/exit events via Ptrace.strace" do
+  it "yields syscall enter/exit events via Rptrace.strace" do
     with_ptrace_permission do
       events = []
 
-      Ptrace.strace("/bin/true") do |event|
+      Rptrace.strace("/bin/true") do |event|
         events << event
       end
 
@@ -217,7 +217,7 @@ RSpec.describe Ptrace::Tracee do
       script = "pid = fork { sleep 0.02 }; Process.wait(pid)"
       pids = []
 
-      Ptrace.strace(RbConfig.ruby, "-e", script, follow_children: true) do |event|
+      Rptrace.strace(RbConfig.ruby, "-e", script, follow_children: true) do |event|
         next unless event.enter?
 
         pids << event.tracee.pid

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Tracee do
+RSpec.describe Rptrace::Tracee do
   let(:tracee) { described_class.allocate }
-  let(:registers) { instance_double(Ptrace::Registers) }
+  let(:registers) { instance_double(Rptrace::Registers) }
 
   before do
     tracee.instance_variable_set(:@pid, 12_345)
     tracee.instance_variable_set(:@registers, registers)
-    tracee.instance_variable_set(:@memory, instance_double(Ptrace::Memory))
+    tracee.instance_variable_set(:@memory, instance_double(Rptrace::Memory))
   end
 
   describe "#current_syscall" do

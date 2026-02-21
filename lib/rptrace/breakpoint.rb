@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Software breakpoint descriptor for a traced process.
   class Breakpoint
     attr_reader :tracee, :address, :original_byte
 
-    # @param tracee [Ptrace::Tracee]
+    # @param tracee [Rptrace::Tracee]
     # @param address [Integer]
     # @param original_byte [String] one-byte opcode before patching
     # @param enabled [Boolean]
@@ -24,7 +24,7 @@ module Ptrace
       @enabled
     end
 
-    # @return [Ptrace::Breakpoint]
+    # @return [Rptrace::Breakpoint]
     def disable!
       @enabled = false
       self
@@ -32,7 +32,7 @@ module Ptrace
 
     # Restores original opcode through the owning tracee.
     #
-    # @return [Ptrace::Breakpoint, nil]
+    # @return [Rptrace::Breakpoint, nil]
     def restore
       tracee.remove_breakpoint(address)
     end

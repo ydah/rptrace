@@ -2,7 +2,7 @@
 
 require "fiddle"
 
-module Ptrace
+module Rptrace
   # Register accessor for a tracee process.
   class Registers
     def initialize(tracee, arch: CStructs.arch)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Breakpoint do
-  let(:tracee) { instance_double(Ptrace::Tracee) }
+RSpec.describe Rptrace::Breakpoint do
+  let(:tracee) { instance_double(Rptrace::Tracee) }
 
   it "stores address and original byte" do
     breakpoint = described_class.new(tracee: tracee, address: 0x401000, original_byte: "\x55".b)

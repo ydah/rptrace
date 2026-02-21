@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Runtime helpers to inspect ptrace permission-related environment.
   module Permission
     # Linux capability bit index for CAP_SYS_PTRACE.
@@ -83,7 +83,7 @@ module Ptrace
     #
     # @param request [Symbol] logical request label attached to raised error
     # @return [Hash] diagnostics hash when privileged
-    # @raise [Ptrace::PermissionError]
+    # @raise [Rptrace::PermissionError]
     def ensure_privileged!(request: :permission_check)
       report = diagnostics
       return report if report.fetch(:ptrace_privileged)

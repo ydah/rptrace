@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-module Ptrace
+module Rptrace
   # Renderable seccomp ptrace event.
   class SeccompEvent
     attr_reader :tracee, :syscall, :data, :metadata_flags
 
-    # @param tracee [Ptrace::Tracee]
-    # @param syscall [Ptrace::Syscall::SyscallInfo]
+    # @param tracee [Rptrace::Tracee]
+    # @param syscall [Rptrace::Syscall::SyscallInfo]
     # @param data [Integer]
     # @param metadata_flags [Array<Symbol>]
     def initialize(tracee:, syscall:, data:, metadata_flags: [])

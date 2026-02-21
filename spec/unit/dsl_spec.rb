@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace do
+RSpec.describe Rptrace do
   describe ".trace" do
     it "passes ptrace options through to Tracee.spawn" do
-      tracee = instance_double(Ptrace::Tracee)
+      tracee = instance_double(Rptrace::Tracee)
       allow(tracee).to receive(:detach)
-      expect(Ptrace::Tracee).to receive(:spawn).with("/bin/true", options: 0).and_return(tracee)
+      expect(Rptrace::Tracee).to receive(:spawn).with("/bin/true", options: 0).and_return(tracee)
 
       described_class.trace("/bin/true", options: 0) { :ok }
     end
 
     it "detaches tracee after block execution" do
-      tracee = instance_double(Ptrace::Tracee)
+      tracee = instance_double(Rptrace::Tracee)
       allow(tracee).to receive(:detach)
-      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      allow(Rptrace::Tracee).to receive(:spawn).and_return(tracee)
 
       yielded = nil
       described_class.trace("/bin/true") { |t| yielded = t }
@@ -23,9 +23,9 @@ RSpec.describe Ptrace do
     end
 
     it "detaches tracee even when block raises" do
-      tracee = instance_double(Ptrace::Tracee)
+      tracee = instance_double(Rptrace::Tracee)
       allow(tracee).to receive(:detach)
-      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      allow(Rptrace::Tracee).to receive(:spawn).and_return(tracee)
 
       expect do
         described_class.trace("/bin/true") { raise "boom" }
@@ -34,9 +34,9 @@ RSpec.describe Ptrace do
     end
 
     it "suppresses detach errors during ensure" do
-      tracee = instance_double(Ptrace::Tracee)
-      allow(tracee).to receive(:detach).and_raise(Ptrace::NoProcessError.new("gone"))
-      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      tracee = instance_double(Rptrace::Tracee)
+      allow(tracee).to receive(:detach).and_raise(Rptrace::NoProcessError.new("gone"))
+      allow(Rptrace::Tracee).to receive(:spawn).and_return(tracee)
 
       expect { described_class.trace("/bin/true") { :ok } }.not_to raise_error
     end
@@ -44,17 +44,17 @@ RSpec.describe Ptrace do
 
   describe ".strace" do
     it "yields enter and exit syscall events" do
-      tracee = instance_double(Ptrace::Tracee)
-      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      tracee = instance_double(Rptrace::Tracee)
+      allow(Rptrace::Tracee).to receive(:spawn).and_return(tracee)
       allow(tracee).to receive(:detach)
       allow(tracee).to receive(:syscall).and_return(tracee)
 
-      enter_stop = instance_double(Ptrace::Event, exited?: false, signaled?: false, syscall_stop?: true, seccomp_event?: false)
-      exit_stop = instance_double(Ptrace::Event, exited?: false, signaled?: false, syscall_stop?: false, seccomp_event?: false)
-      process_exit = instance_double(Ptrace::Event, exited?: true, signaled?: false, syscall_stop?: false, seccomp_event?: false)
+      enter_stop = instance_double(Rptrace::Event, exited?: false, signaled?: false, syscall_stop?: true, seccomp_event?: false)
+      exit_stop = instance_double(Rptrace::Event, exited?: false, signaled?: false, syscall_stop?: false, seccomp_event?: false)
+      process_exit = instance_double(Rptrace::Event, exited?: true, signaled?: false, syscall_stop?: false, seccomp_event?: false)
       allow(tracee).to receive(:wait).and_return(enter_stop, exit_stop, process_exit)
 
-      syscall_info = Ptrace::Syscall::SyscallInfo.new(
+      syscall_info = Rptrace::Syscall::SyscallInfo.new(
         number: 1,
         name: :write,
         arg_names: %i[fd buf count],
@@ -75,13 +75,13 @@ RSpec.describe Ptrace do
     end
 
     it "skips non-syscall stops and exits without yielding" do
-      tracee = instance_double(Ptrace::Tracee)
-      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      tracee = instance_double(Rptrace::Tracee)
+      allow(Rptrace::Tracee).to receive(:spawn).and_return(tracee)
       allow(tracee).to receive(:detach)
       allow(tracee).to receive(:syscall).and_return(tracee)
 
-      not_syscall_stop = instance_double(Ptrace::Event, exited?: false, signaled?: false, syscall_stop?: false, seccomp_event?: false)
-      process_exit = instance_double(Ptrace::Event, exited?: true, signaled?: false, syscall_stop?: false, seccomp_event?: false)
+      not_syscall_stop = instance_double(Rptrace::Event, exited?: false, signaled?: false, syscall_stop?: false, seccomp_event?: false)
+      process_exit = instance_double(Rptrace::Event, exited?: true, signaled?: false, syscall_stop?: false, seccomp_event?: false)
       allow(tracee).to receive(:wait).and_return(not_syscall_stop, process_exit)
 
       yielded = []
@@ -91,27 +91,27 @@ RSpec.describe Ptrace do
     end
 
     it "yields seccomp events when yield_seccomp is enabled" do
-      tracee = instance_double(Ptrace::Tracee, pid: 123)
-      allow(Ptrace::Tracee).to receive(:spawn).and_return(tracee)
+      tracee = instance_double(Rptrace::Tracee, pid: 123)
+      allow(Rptrace::Tracee).to receive(:spawn).and_return(tracee)
       allow(tracee).to receive(:detach)
       allow(tracee).to receive(:syscall).and_return(tracee)
 
       seccomp_stop = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         exited?: false,
         signaled?: false,
         syscall_stop?: false,
         seccomp_event?: true
       )
       process_exit = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         exited?: true,
         signaled?: false,
         syscall_stop?: false,
         seccomp_event?: false
       )
       allow(tracee).to receive(:wait).and_return(seccomp_stop, process_exit)
-      syscall_info = Ptrace::Syscall::SyscallInfo.new(number: 257, name: :openat, arg_names: [], arg_types: [])
+      syscall_info = Rptrace::Syscall::SyscallInfo.new(number: 257, name: :openat, arg_names: [], arg_types: [])
       allow(tracee).to receive(:current_syscall).and_return(syscall_info)
       allow(tracee).to receive(:seccomp_data).and_return(0xAA)
       allow(tracee).to receive(:seccomp_metadata_flag_names).and_return([:log])
@@ -120,14 +120,14 @@ RSpec.describe Ptrace do
       described_class.strace("/bin/echo", "hello", yield_seccomp: true) { |event| yielded << event }
 
       expect(yielded.size).to eq(1)
-      expect(yielded.first).to be_a(Ptrace::SeccompEvent)
+      expect(yielded.first).to be_a(Rptrace::SeccompEvent)
       expect(yielded.first.data).to eq(0xAA)
       expect(yielded.first.metadata_flags).to eq([:log])
     end
 
     it "follows clone descendants when follow_children is enabled" do
-      root_tracee = instance_double(Ptrace::Tracee)
-      child_tracee = instance_double(Ptrace::Tracee)
+      root_tracee = instance_double(Rptrace::Tracee)
+      child_tracee = instance_double(Rptrace::Tracee)
       allow(root_tracee).to receive(:pid).and_return(111)
       allow(root_tracee).to receive(:detach)
       allow(root_tracee).to receive(:syscall).and_return(root_tracee)
@@ -135,21 +135,21 @@ RSpec.describe Ptrace do
       allow(child_tracee).to receive(:pid).and_return(222)
       allow(child_tracee).to receive(:syscall).and_return(child_tracee)
       follow_children_options =
-        Ptrace::Tracee::DEFAULT_TRACE_OPTIONS |
-        Ptrace::Constants::PTRACE_O_TRACECLONE |
-        Ptrace::Constants::PTRACE_O_TRACEFORK |
-        Ptrace::Constants::PTRACE_O_TRACEVFORK
+        Rptrace::Tracee::DEFAULT_TRACE_OPTIONS |
+        Rptrace::Constants::PTRACE_O_TRACECLONE |
+        Rptrace::Constants::PTRACE_O_TRACEFORK |
+        Rptrace::Constants::PTRACE_O_TRACEVFORK
       allow(child_tracee).to receive(:set_options).with(follow_children_options).and_return(child_tracee)
 
-      expect(Ptrace::Tracee).to receive(:spawn).with(
+      expect(Rptrace::Tracee).to receive(:spawn).with(
         "/bin/echo",
         "hello",
         options: follow_children_options
       ).and_return(root_tracee)
-      expect(Ptrace::Tracee).to receive(:new).with(222).and_return(child_tracee)
+      expect(Rptrace::Tracee).to receive(:new).with(222).and_return(child_tracee)
 
       clone_event = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 111,
         exited?: false,
         signaled?: false,
@@ -158,7 +158,7 @@ RSpec.describe Ptrace do
         fork_like_event?: true
       )
       root_exit = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 111,
         exited?: true,
         signaled?: false,
@@ -167,7 +167,7 @@ RSpec.describe Ptrace do
         fork_like_event?: false
       )
       child_enter = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 222,
         exited?: false,
         signaled?: false,
@@ -176,7 +176,7 @@ RSpec.describe Ptrace do
         fork_like_event?: false
       )
       child_exit = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 222,
         exited?: false,
         signaled?: false,
@@ -185,7 +185,7 @@ RSpec.describe Ptrace do
         fork_like_event?: false
       )
       child_dead = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 222,
         exited?: true,
         signaled?: false,
@@ -193,9 +193,9 @@ RSpec.describe Ptrace do
         seccomp_event?: false,
         fork_like_event?: false
       )
-      allow(Ptrace::Tracee).to receive(:wait_any).and_return(clone_event, root_exit, child_enter, child_exit, child_dead)
+      allow(Rptrace::Tracee).to receive(:wait_any).and_return(clone_event, root_exit, child_enter, child_exit, child_dead)
 
-      syscall_info = Ptrace::Syscall::SyscallInfo.new(
+      syscall_info = Rptrace::Syscall::SyscallInfo.new(
         number: 1,
         name: :write,
         arg_names: %i[fd buf count],
@@ -216,19 +216,19 @@ RSpec.describe Ptrace do
     end
 
     it "yields seccomp events in follow_children mode when enabled" do
-      root_tracee = instance_double(Ptrace::Tracee, pid: 111)
+      root_tracee = instance_double(Rptrace::Tracee, pid: 111)
       allow(root_tracee).to receive(:detach)
       allow(root_tracee).to receive(:syscall).and_return(root_tracee)
       allow(root_tracee).to receive(:current_syscall).and_return(
-        Ptrace::Syscall::SyscallInfo.new(number: 1, name: :write, arg_names: [], arg_types: [])
+        Rptrace::Syscall::SyscallInfo.new(number: 1, name: :write, arg_names: [], arg_types: [])
       )
       allow(root_tracee).to receive(:seccomp_data).and_return(0x10)
       allow(root_tracee).to receive(:seccomp_metadata_flag_names).and_return([:tsync])
 
-      expect(Ptrace::Tracee).to receive(:spawn).and_return(root_tracee)
+      expect(Rptrace::Tracee).to receive(:spawn).and_return(root_tracee)
 
       seccomp_event = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 111,
         exited?: false,
         signaled?: false,
@@ -237,7 +237,7 @@ RSpec.describe Ptrace do
         fork_like_event?: false
       )
       root_exit = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 111,
         exited?: true,
         signaled?: false,
@@ -245,33 +245,33 @@ RSpec.describe Ptrace do
         seccomp_event?: false,
         fork_like_event?: false
       )
-      allow(Ptrace::Tracee).to receive(:wait_any).and_return(seccomp_event, root_exit)
+      allow(Rptrace::Tracee).to receive(:wait_any).and_return(seccomp_event, root_exit)
 
       yielded = []
       described_class.strace("/bin/echo", "hello", follow_children: true, yield_seccomp: true) { |event| yielded << event }
 
       expect(yielded.size).to eq(1)
-      expect(yielded.first).to be_a(Ptrace::SeccompEvent)
+      expect(yielded.first).to be_a(Rptrace::SeccompEvent)
       expect(yielded.first.tracee).to eq(root_tracee)
       expect(yielded.first.metadata_flags).to eq([:tsync])
     end
 
     it "suppresses NoProcessError when resuming a child in follow_children mode" do
-      root_tracee = instance_double(Ptrace::Tracee)
-      child_tracee = instance_double(Ptrace::Tracee)
+      root_tracee = instance_double(Rptrace::Tracee)
+      child_tracee = instance_double(Rptrace::Tracee)
       allow(root_tracee).to receive(:pid).and_return(111)
       allow(root_tracee).to receive(:detach)
       allow(root_tracee).to receive(:syscall).and_return(root_tracee)
       allow(root_tracee).to receive(:event_message).and_return(222)
       allow(child_tracee).to receive(:pid).and_return(222)
       allow(child_tracee).to receive(:set_options).and_return(child_tracee)
-      allow(child_tracee).to receive(:syscall).and_raise(Ptrace::NoProcessError.new("gone"))
+      allow(child_tracee).to receive(:syscall).and_raise(Rptrace::NoProcessError.new("gone"))
 
-      expect(Ptrace::Tracee).to receive(:spawn).and_return(root_tracee)
-      expect(Ptrace::Tracee).to receive(:new).with(222).and_return(child_tracee)
+      expect(Rptrace::Tracee).to receive(:spawn).and_return(root_tracee)
+      expect(Rptrace::Tracee).to receive(:new).with(222).and_return(child_tracee)
 
       clone_event = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 111,
         exited?: false,
         signaled?: false,
@@ -280,7 +280,7 @@ RSpec.describe Ptrace do
         fork_like_event?: true
       )
       root_exit = instance_double(
-        Ptrace::Event,
+        Rptrace::Event,
         pid: 111,
         exited?: true,
         signaled?: false,
@@ -288,7 +288,7 @@ RSpec.describe Ptrace do
         seccomp_event?: false,
         fork_like_event?: false
       )
-      allow(Ptrace::Tracee).to receive(:wait_any).and_return(clone_event, root_exit)
+      allow(Rptrace::Tracee).to receive(:wait_any).and_return(clone_event, root_exit)
 
       expect do
         described_class.strace("/bin/echo", "hello", follow_children: true) { |_event| }

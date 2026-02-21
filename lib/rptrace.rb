@@ -2,25 +2,25 @@
 
 require "rbconfig"
 
-require_relative "ptrace/version"
-require_relative "ptrace/error"
-require_relative "ptrace/constants"
-require_relative "ptrace/binding"
-require_relative "ptrace/c_structs"
-require_relative "ptrace/permission"
-require_relative "ptrace/event"
-require_relative "ptrace/registers"
-require_relative "ptrace/memory"
-require_relative "ptrace/breakpoint"
-require_relative "ptrace/proc_maps"
-require_relative "ptrace/syscall"
-require_relative "ptrace/syscall_event"
-require_relative "ptrace/seccomp_event"
-require_relative "ptrace/tracee"
-require_relative "ptrace/dsl"
+require_relative "rptrace/version"
+require_relative "rptrace/error"
+require_relative "rptrace/constants"
+require_relative "rptrace/binding"
+require_relative "rptrace/c_structs"
+require_relative "rptrace/permission"
+require_relative "rptrace/event"
+require_relative "rptrace/registers"
+require_relative "rptrace/memory"
+require_relative "rptrace/breakpoint"
+require_relative "rptrace/proc_maps"
+require_relative "rptrace/syscall"
+require_relative "rptrace/syscall_event"
+require_relative "rptrace/seccomp_event"
+require_relative "rptrace/tracee"
+require_relative "rptrace/dsl"
 
 # Linux ptrace wrapper.
-module Ptrace
+module Rptrace
   class << self
     # @return [Boolean] true when running on Linux host OS
     def linux?
@@ -41,7 +41,7 @@ module Ptrace
     #
     # @param request [Symbol]
     # @return [Hash]
-    # @raise [Ptrace::PermissionError]
+    # @raise [Rptrace::PermissionError]
     def ensure_ptrace_privileged!(request: :permission_check)
       Permission.ensure_privileged!(request: request)
     end

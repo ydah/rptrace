@@ -2,7 +2,7 @@
 
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
-require_relative "lib/ptrace/syscall_table/generator"
+require_relative "lib/rptrace/syscall_table/generator"
 require "yaml"
 
 RSpec::Core::RakeTask.new(:spec)
@@ -11,14 +11,14 @@ namespace :syscall do
   desc "Generate syscall tables from Linux headers"
   task :generate do
     arches = ENV.fetch("ARCH", "").split(",").map(&:strip).reject(&:empty?).map(&:to_sym)
-    arches = Ptrace::SyscallTable::Generator::ARCH_CONFIG.keys if arches.empty?
+    arches = Rptrace::SyscallTable::Generator::ARCH_CONFIG.keys if arches.empty?
     strict = ENV["STRICT"] == "1"
 
     if strict
-      results = Ptrace::SyscallTable::Generator.generate_all(root_dir: __dir__, arches: arches, skip_missing: false)
+      results = Rptrace::SyscallTable::Generator.generate_all(root_dir: __dir__, arches: arches, skip_missing: false)
       skipped = []
     else
-      output = Ptrace::SyscallTable::Generator.generate_available(root_dir: __dir__, arches: arches)
+      output = Rptrace::SyscallTable::Generator.generate_available(root_dir: __dir__, arches: arches)
       results = output.fetch(:generated)
       skipped = output.fetch(:skipped)
     end
@@ -34,7 +34,7 @@ namespace :syscall do
     skipped.each do |entry|
       warn "skipped #{entry[:arch]}: #{entry[:reason]}"
     end
-  rescue Ptrace::SyscallTable::Generator::HeaderNotFoundError, ArgumentError => e
+  rescue Rptrace::SyscallTable::Generator::HeaderNotFoundError, ArgumentError => e
     abort("syscall:generate failed: #{e.message}")
   end
 end
@@ -42,9 +42,9 @@ end
 namespace :release do
   desc "Run release preflight checks (unit specs, docs, gem build)"
   task :preflight do
-    sh "bundle exec rspec spec/unit spec/ptrace_spec.rb"
+    sh "bundle exec rspec spec/unit spec/rptrace_spec.rb"
     sh "bundle exec yard doc -n --no-cache"
-    sh "gem build ptrace-ruby.gemspec"
+    sh "gem build rptrace.gemspec"
   end
 
   desc "Check RubyGems API key availability for gem push"

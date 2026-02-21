@@ -20,9 +20,9 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
       - name: Run unit specs
-        run: bundle exec rspec spec/unit spec/ptrace_spec.rb
+        run: bundle exec rspec spec/unit spec/rptrace_spec.rb
       - name: Build gem package
-        run: gem build ptrace-ruby.gemspec
+        run: gem build rptrace.gemspec
       - name: Publish to RubyGems
         if: ${{ secrets.RUBYGEMS_API_KEY != '' }}
         env:
@@ -31,4 +31,4 @@ jobs:
           mkdir -p ~/.gem
           printf -- "---\n:rubygems_api_key: %s\n" "$RUBYGEMS_API_KEY" > ~/.gem/credentials
           chmod 0600 ~/.gem/credentials
-          gem push ptrace-ruby-*.gem
+          gem push rptrace-*.gem

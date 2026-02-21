@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::ProcMaps do
+RSpec.describe Rptrace::ProcMaps do
   describe ".parse_line" do
     it "parses a file-backed mapping line" do
       line = "00400000-00452000 r-xp 00000000 08:02 173521 /usr/bin/bash"

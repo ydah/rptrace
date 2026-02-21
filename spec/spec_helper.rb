@@ -13,7 +13,7 @@ if ENV["COVERAGE"] == "1"
   end
 end
 
-require "ptrace"
+require "rptrace"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

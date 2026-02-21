@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::Event do
+RSpec.describe Rptrace::Event do
   describe "state helpers" do
     it "detects exited status and exit code" do
       event = described_class.new(100, 42 << 8)
@@ -22,7 +22,7 @@ RSpec.describe Ptrace::Event do
     end
 
     it "detects ptrace event code" do
-      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_EXEC << 16)
+      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_EXEC << 16)
       event = described_class.new(300, status)
 
       expect(event.exec_event?).to be(true)
@@ -35,8 +35,8 @@ RSpec.describe Ptrace::Event do
     end
 
     it "detects vfork and vfork_done event codes" do
-      vfork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_VFORK << 16)
-      vfork_done_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_VFORK_DONE << 16)
+      vfork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_VFORK << 16)
+      vfork_done_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_VFORK_DONE << 16)
 
       vfork_event = described_class.new(301, vfork_status)
       vfork_done_event = described_class.new(302, vfork_done_status)
@@ -46,17 +46,17 @@ RSpec.describe Ptrace::Event do
     end
 
     it "detects seccomp event code" do
-      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_SECCOMP << 16)
+      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_SECCOMP << 16)
       event = described_class.new(303, status)
 
       expect(event.seccomp_event?).to be(true)
     end
 
     it "treats fork/clone/vfork as fork-like events" do
-      fork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_FORK << 16)
-      clone_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_CLONE << 16)
-      vfork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_VFORK << 16)
-      exec_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_EXEC << 16)
+      fork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_FORK << 16)
+      clone_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_CLONE << 16)
+      vfork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_VFORK << 16)
+      exec_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_EXEC << 16)
 
       expect(described_class.new(400, fork_status).fork_like_event?).to be(true)
       expect(described_class.new(401, clone_status).fork_like_event?).to be(true)
@@ -97,7 +97,7 @@ RSpec.describe Ptrace::Event do
     end
 
     it "formats inspect output with ptrace event name when present" do
-      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_EXEC << 16)
+      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Rptrace::Constants::PTRACE_EVENT_EXEC << 16)
       event = described_class.new(1002, status)
 
       expect(event.inspect).to include("state=stopped(SIGTRAP)")

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ptrace::CStructs do
+RSpec.describe Rptrace::CStructs do
   it "supports host architecture" do
     expect(%i[x86_64 aarch64]).to include(described_class.arch)
   end
@@ -50,6 +50,6 @@ RSpec.describe Ptrace::CStructs do
   it "raises for unsupported register architecture" do
     expect do
       described_class.reg_names(arch: :mips)
-    end.to raise_error(Ptrace::UnsupportedArchError, /Unsupported architecture/)
+    end.to raise_error(Rptrace::UnsupportedArchError, /Unsupported architecture/)
   end
 end
