@@ -2,10 +2,10 @@
 
 RSpec.describe Ptrace do
   it "has a version number" do
-    expect(Ptrace::VERSION).not_to be nil
+    expect(Ptrace::VERSION).not_to be_nil
   end
 
-  it "does something useful" do
-    expect(false).to eq(true)
+  it "uses top-level Ptrace namespace" do
+    expect(defined?(Ptrace::Ruby)).to be_nil
   end
 end
