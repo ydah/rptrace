@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rbconfig"
+
 RSpec.describe Ptrace::Tracee do
   INTEGRATION_ENV = "PTRACE_RUN_INTEGRATION"
 
@@ -176,6 +178,21 @@ RSpec.describe Ptrace::Tracee do
       expect(events).not_to be_empty
       expect(events.any?(&:enter?)).to be(true)
       expect(events.any?(&:exit?)).to be(true)
+    end
+  end
+
+  it "follows child process syscalls with follow_children mode" do
+    with_ptrace_permission do
+      script = "pid = fork { sleep 0.02 }; Process.wait(pid)"
+      pids = []
+
+      Ptrace.strace(RbConfig.ruby, "-e", script, follow_children: true) do |event|
+        next unless event.enter?
+
+        pids << event.tracee.pid
+      end
+
+      expect(pids.uniq.size).to be >= 2
     end
   end
 end
