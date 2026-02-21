@@ -1,16 +1,93 @@
 # frozen_string_literal: true
 
 RSpec.describe Ptrace::Tracee do
-  it "spawns and traces /bin/true" do
+  INTEGRATION_ENV = "PTRACE_RUN_INTEGRATION"
+
+  def ensure_integration_environment!
     skip "linux-only integration spec" unless Ptrace.linux?
+    return if ENV[INTEGRATION_ENV] == "1"
 
-    tracee = described_class.spawn("/bin/true")
-    tracee.cont
-    event = tracee.wait(flags: Ptrace::Constants::__WALL)
+    skip "set #{INTEGRATION_ENV}=1 to run ptrace integration specs"
+  end
 
-    expect(event.exited?).to be(true)
-    expect(event.exit_status).to eq(0)
+  def with_ptrace_permission
+    yield
+  rescue Ptrace::PermissionError => e
+    skip "ptrace permission required: #{e.message}"
+  end
+
+  before do
+    ensure_integration_environment!
+  end
+
+  it "spawns and traces /bin/true" do
+    tracee = nil
+
+    with_ptrace_permission do
+      tracee = described_class.spawn("/bin/true")
+      tracee.cont
+      event = tracee.wait(flags: Ptrace::Constants::__WALL)
+
+      expect(event.exited?).to be(true)
+      expect(event.exit_status).to eq(0)
+    end
   ensure
     tracee&.detach
+  end
+
+  it "reports syscall stops with PTRACE_SYSCALL" do
+    tracee = nil
+
+    with_ptrace_permission do
+      tracee = described_class.spawn("/bin/true")
+
+      seen_syscall_stop = false
+      256.times do
+        tracee.syscall
+        event = tracee.wait(flags: Ptrace::Constants::__WALL)
+
+        break if event.exited? || event.signaled?
+        next unless event.syscall_stop?
+
+        seen_syscall_stop = true
+        break
+      end
+
+      expect(seen_syscall_stop).to be(true)
+    end
+  ensure
+    tracee&.detach
+  end
+
+  it "attaches and detaches from a running process" do
+    tracee = nil
+    child_pid = nil
+
+    with_ptrace_permission do
+      child_pid = Process.spawn("/bin/sleep", "2")
+      tracee = described_class.attach(child_pid)
+
+      expect(tracee.pid).to eq(child_pid)
+      expect { tracee.detach }.not_to raise_error
+      expect { Process.kill(0, child_pid) }.not_to raise_error
+    end
+  ensure
+    begin
+      tracee&.detach
+    rescue Ptrace::Error, Errno::ESRCH
+      nil
+    end
+
+    begin
+      Process.kill("KILL", child_pid) if child_pid
+    rescue Errno::ESRCH
+      nil
+    end
+
+    begin
+      Process.wait(child_pid) if child_pid
+    rescue Errno::ECHILD
+      nil
+    end
   end
 end
