@@ -1,4 +1,4 @@
-# rptrace
+# rptrace [![Gem Version](https://badge.fury.io/rb/rptrace.svg)](https://badge.fury.io/rb/rptrace) [![CI](https://github.com/ydah/rptrace/actions/workflows/main.yml/badge.svg)](https://github.com/ydah/rptrace/actions/workflows/main.yml)
 
 `rptrace` is a Ruby wrapper for Linux `ptrace(2)` focused on building tracers and debugger-like tooling with a Ruby-friendly API.
 
