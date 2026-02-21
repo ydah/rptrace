@@ -21,6 +21,13 @@ module Ptrace
       }.freeze
     }.freeze
     BREAKPOINT_OPCODE = "\xCC".b
+    SECCOMP_METADATA_FLAG_NAMES = {
+      Constants::SECCOMP_FILTER_FLAG_TSYNC => :tsync,
+      Constants::SECCOMP_FILTER_FLAG_LOG => :log,
+      Constants::SECCOMP_FILTER_FLAG_SPEC_ALLOW => :spec_allow,
+      Constants::SECCOMP_FILTER_FLAG_NEW_LISTENER => :new_listener,
+      Constants::SECCOMP_FILTER_FLAG_TSYNC_ESRCH => :tsync_esrch
+    }.freeze
 
     def initialize(pid)
       @pid = Integer(pid)
@@ -249,6 +256,14 @@ module Ptrace
       CStructs.decode_seccomp_filter(pointer[0, copied_count * CStructs::SECCOMP_FILTER_INSN_SIZE])
     end
 
+    # Returns symbolic names for seccomp metadata flags.
+    #
+    # @param index [Integer]
+    # @return [Array<Symbol>]
+    def seccomp_metadata_flag_names(index: 0)
+      decode_seccomp_metadata_flags(seccomp_metadata(index: index).fetch(:flags))
+    end
+
     # Returns active software breakpoints.
     #
     # @return [Array<Ptrace::Breakpoint>]
@@ -328,6 +343,21 @@ module Ptrace
       return if arch == :x86_64
 
       raise UnsupportedArchError, "software breakpoints are supported only on x86_64 (got #{arch})"
+    end
+
+    def decode_seccomp_metadata_flags(flags)
+      value = Integer(flags)
+      names = []
+
+      SECCOMP_METADATA_FLAG_NAMES.keys.sort.each do |bit|
+        next unless (value & bit) == bit
+
+        names << SECCOMP_METADATA_FLAG_NAMES.fetch(bit)
+        value &= ~bit
+      end
+
+      names << :"unknown_0x#{value.to_s(16)}" unless value.zero?
+      names
     end
 
     class << self

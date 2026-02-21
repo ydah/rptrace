@@ -171,6 +171,21 @@ RSpec.describe Ptrace::Tracee do
 
       expect(tracee.seccomp_filter(index: 0)).to eq([])
     end
+
+    it "decodes known seccomp metadata flag names" do
+      allow(tracee).to receive(:seccomp_metadata).with(index: 0).and_return(
+        filter_off: 0,
+        flags: Ptrace::Constants::SECCOMP_FILTER_FLAG_TSYNC | Ptrace::Constants::SECCOMP_FILTER_FLAG_LOG
+      )
+
+      expect(tracee.seccomp_metadata_flag_names).to eq(%i[tsync log])
+    end
+
+    it "reports unknown seccomp metadata flag bits" do
+      allow(tracee).to receive(:seccomp_metadata).with(index: 0).and_return(filter_off: 0, flags: 0x40)
+
+      expect(tracee.seccomp_metadata_flag_names).to eq([:unknown_0x40])
+    end
   end
 
   describe "class controls" do
