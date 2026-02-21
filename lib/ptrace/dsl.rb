@@ -82,7 +82,7 @@ module Ptrace
           next
         end
 
-        if fork_like_event?(event)
+        if event.fork_like_event?
           child_pid = tracee.event_message
           child_tracee = tracees.fetch(child_pid) do
             created = Tracee.new(child_pid)
@@ -115,10 +115,6 @@ module Ptrace
       end
     ensure
       tracees&.each_value { |tracee| safe_detach(tracee) }
-    end
-
-    def fork_like_event?(event)
-      event.clone_event? || event.fork_event? || event.vfork_event?
     end
 
     def safe_detach(tracee)

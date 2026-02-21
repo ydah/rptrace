@@ -119,9 +119,7 @@ RSpec.describe Ptrace do
         exited?: false,
         signaled?: false,
         syscall_stop?: false,
-        fork_event?: false,
-        clone_event?: true,
-        vfork_event?: false
+        fork_like_event?: true
       )
       root_exit = instance_double(
         Ptrace::Event,
@@ -129,9 +127,7 @@ RSpec.describe Ptrace do
         exited?: true,
         signaled?: false,
         syscall_stop?: false,
-        fork_event?: false,
-        clone_event?: false,
-        vfork_event?: false
+        fork_like_event?: false
       )
       child_enter = instance_double(
         Ptrace::Event,
@@ -139,9 +135,7 @@ RSpec.describe Ptrace do
         exited?: false,
         signaled?: false,
         syscall_stop?: true,
-        fork_event?: false,
-        clone_event?: false,
-        vfork_event?: false
+        fork_like_event?: false
       )
       child_exit = instance_double(
         Ptrace::Event,
@@ -149,9 +143,7 @@ RSpec.describe Ptrace do
         exited?: false,
         signaled?: false,
         syscall_stop?: true,
-        fork_event?: false,
-        clone_event?: false,
-        vfork_event?: false
+        fork_like_event?: false
       )
       child_dead = instance_double(
         Ptrace::Event,
@@ -159,9 +151,7 @@ RSpec.describe Ptrace do
         exited?: true,
         signaled?: false,
         syscall_stop?: false,
-        fork_event?: false,
-        clone_event?: false,
-        vfork_event?: false
+        fork_like_event?: false
       )
       allow(Ptrace::Tracee).to receive(:wait_any).and_return(clone_event, root_exit, child_enter, child_exit, child_dead)
 

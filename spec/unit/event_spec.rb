@@ -52,6 +52,18 @@ RSpec.describe Ptrace::Event do
       expect(event.seccomp_event?).to be(true)
     end
 
+    it "treats fork/clone/vfork as fork-like events" do
+      fork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_FORK << 16)
+      clone_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_CLONE << 16)
+      vfork_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_VFORK << 16)
+      exec_status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_EXEC << 16)
+
+      expect(described_class.new(400, fork_status).fork_like_event?).to be(true)
+      expect(described_class.new(401, clone_status).fork_like_event?).to be(true)
+      expect(described_class.new(402, vfork_status).fork_like_event?).to be(true)
+      expect(described_class.new(403, exec_status).fork_like_event?).to be(false)
+    end
+
     it "detects continued state" do
       event = described_class.new(301, 0xFFFF)
 
