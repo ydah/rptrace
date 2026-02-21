@@ -47,11 +47,28 @@ RSpec.describe Ptrace::Event do
       expect(event.exited?).to be(false)
     end
 
-    it "formats inspect output with pid and hex status" do
-      event = described_class.new(999, 0xABC)
+    it "formats inspect output with exited summary" do
+      event = described_class.new(999, 42 << 8)
 
       expect(event.inspect).to include("pid=999")
-      expect(event.inspect).to include("status=0xabc")
+      expect(event.inspect).to include("status=0x2a00")
+      expect(event.inspect).to include("state=exited(42)")
+    end
+
+    it "formats inspect output with syscall stop summary" do
+      trap_signal = Signal.list.fetch("TRAP")
+      status = 0x7F | ((trap_signal | 0x80) << 8)
+      event = described_class.new(1001, status)
+
+      expect(event.inspect).to include("state=syscall_stop")
+    end
+
+    it "formats inspect output with ptrace event name when present" do
+      status = 0x7F | (Signal.list.fetch("TRAP") << 8) | (Ptrace::Constants::PTRACE_EVENT_EXEC << 16)
+      event = described_class.new(1002, status)
+
+      expect(event.inspect).to include("state=stopped(SIGTRAP)")
+      expect(event.inspect).to include("event=exec")
     end
   end
 end
