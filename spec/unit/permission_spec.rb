@@ -74,4 +74,22 @@ RSpec.describe Ptrace::Permission do
       expect(diagnostics[:hints]).to eq([])
     end
   end
+
+  describe ".ensure_privileged!" do
+    it "returns diagnostics when ptrace is privileged" do
+      allow(described_class).to receive(:diagnostics).and_return({ptrace_privileged: true, hints: []})
+
+      expect(described_class.ensure_privileged!).to eq({ptrace_privileged: true, hints: []})
+    end
+
+    it "raises PermissionError with hints when ptrace is not privileged" do
+      allow(described_class).to receive(:diagnostics).and_return(
+        {ptrace_privileged: false, hints: ["run as root", "set ptrace_scope <= 1"]}
+      )
+
+      expect do
+        described_class.ensure_privileged!(request: :attach)
+      end.to raise_error(Ptrace::PermissionError, /ptrace privilege required; run as root; set ptrace_scope <= 1/)
+    end
+  end
 end

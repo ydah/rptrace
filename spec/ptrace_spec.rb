@@ -21,4 +21,10 @@ RSpec.describe Ptrace do
     expect(Ptrace.ptrace_permissions).to be_a(Hash)
     expect(Ptrace.ptrace_permissions).to include(:hints)
   end
+
+  it "exposes ptrace privilege assertion helper" do
+    allow(Ptrace::Permission).to receive(:ensure_privileged!).with(request: :attach).and_return({ptrace_privileged: true})
+
+    expect(Ptrace.ensure_ptrace_privileged!(request: :attach)).to eq({ptrace_privileged: true})
+  end
 end

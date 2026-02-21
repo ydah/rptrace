@@ -78,5 +78,20 @@ module Ptrace
         hints: hints
       }
     end
+
+    # Ensures current process has ptrace privilege and raises with actionable hints otherwise.
+    #
+    # @param request [Symbol] logical request label attached to raised error
+    # @return [Hash] diagnostics hash when privileged
+    # @raise [Ptrace::PermissionError]
+    def ensure_privileged!(request: :permission_check)
+      report = diagnostics
+      return report if report.fetch(:ptrace_privileged)
+
+      hint_text = report.fetch(:hints).join("; ")
+      message = "ptrace privilege required"
+      message = "#{message}; #{hint_text}" unless hint_text.empty?
+      raise PermissionError.new(message, errno: Errno::EPERM::Errno, request: request)
+    end
   end
 end

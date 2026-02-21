@@ -36,5 +36,14 @@ module Ptrace
     def ptrace_permissions
       Permission.diagnostics
     end
+
+    # Raises when current process lacks ptrace privilege and returns diagnostics otherwise.
+    #
+    # @param request [Symbol]
+    # @return [Hash]
+    # @raise [Ptrace::PermissionError]
+    def ensure_ptrace_privileged!(request: :permission_check)
+      Permission.ensure_privileged!(request: request)
+    end
   end
 end

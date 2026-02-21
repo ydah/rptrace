@@ -111,6 +111,12 @@ diagnostics = Ptrace.ptrace_permissions
 puts diagnostics # => { ptrace_privileged:, cap_sys_ptrace:, yama_ptrace_scope:, hints: [...] }
 ```
 
+Fail fast with an actionable permission error:
+
+```ruby
+Ptrace.ensure_ptrace_privileged!(request: :attach)
+```
+
 ## Examples
 
 - `examples/simple_strace.rb`
