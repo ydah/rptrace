@@ -60,6 +60,28 @@ RSpec.describe Rptrace::Binding do
       expect(status).to eq(42 << 8)
     end
 
+    it "retries when waitpid is interrupted by signal" do
+      attempts = 0
+
+      allow(described_class).to receive(:waitpid) do |pid, status_ptr, _flags|
+        attempts += 1
+
+        if attempts == 1
+          Fiddle.last_error = Errno::EINTR::Errno
+          -1
+        else
+          status_ptr[0, Fiddle::SIZEOF_INT] = [7 << 8].pack("i")
+          pid
+        end
+      end
+
+      waited_pid, status = described_class.safe_waitpid(123, flags: 0)
+
+      expect(attempts).to eq(2)
+      expect(waited_pid).to eq(123)
+      expect(status).to eq(7 << 8)
+    end
+
     it "raises mapped error when waitpid fails" do
       allow(described_class).to receive(:waitpid) do |_pid, _status_ptr, _flags|
         Fiddle.last_error = Errno::ESRCH::Errno

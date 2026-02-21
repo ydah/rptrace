@@ -51,14 +51,17 @@ module Rptrace
       def safe_waitpid(pid, flags: 0)
         status_ptr = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT)
 
-        clear_errno!
-        waited_pid = waitpid(pid, status_ptr, flags)
-        errno = Fiddle.last_error
+        loop do
+          clear_errno!
+          waited_pid = waitpid(pid, status_ptr, flags)
+          errno = Fiddle.last_error
 
-        raise_ptrace_error(errno, :waitpid) if waited_pid == -1
+          next if waited_pid == -1 && errno == Errno::EINTR::Errno
+          raise_ptrace_error(errno, :waitpid) if waited_pid == -1
 
-        status = status_ptr[0, Fiddle::SIZEOF_INT].unpack1("i")
-        [waited_pid, status]
+          status = status_ptr[0, Fiddle::SIZEOF_INT].unpack1("i")
+          return [waited_pid, status]
+        end
       end
 
       # Resets thread-local errno to zero.
