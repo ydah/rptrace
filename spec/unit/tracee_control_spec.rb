@@ -53,6 +53,21 @@ RSpec.describe Ptrace::Tracee do
     it "raises unsupported arch error for unknown syscall layout" do
       expect { tracee.current_syscall(arch: :mips) }.to raise_error(Ptrace::UnsupportedArchError)
     end
+
+    it "returns parsed /proc memory maps for pid" do
+      maps = [Ptrace::ProcMaps::Mapping.new(
+        start_addr: 0x1000,
+        end_addr: 0x2000,
+        permissions: "r--p",
+        offset: 0,
+        device: "00:00",
+        inode: 0,
+        pathname: nil
+      )]
+      expect(Ptrace::ProcMaps).to receive(:read).with(4321).and_return(maps)
+
+      expect(tracee.memory_maps).to eq(maps)
+    end
   end
 
   describe "class controls" do

@@ -163,6 +163,13 @@ module Ptrace
       registers[layout.fetch(:return_value)]
     end
 
+    # Parses current process memory mappings from /proc/<pid>/maps.
+    #
+    # @return [Array<Ptrace::ProcMaps::Mapping>]
+    def memory_maps
+      ProcMaps.read(pid)
+    end
+
     private
 
     def request(request, signal)
