@@ -23,7 +23,7 @@ module Ptrace
       raise Error, "fork failed" unless child_pid
 
       tracee = new(child_pid)
-      initial_event = tracee.wait(flags: Constants::__WALL)
+      initial_event = tracee.wait(flags: Constants::WALL)
       ensure_stopped!(event: initial_event, pid: child_pid, action: :spawn)
       configure_trace_options(pid: child_pid, options: options)
       tracee
@@ -33,7 +33,7 @@ module Ptrace
       pid = Integer(pid)
       Binding.safe_ptrace(Constants::PTRACE_ATTACH, pid, 0, 0)
       tracee = new(pid)
-      initial_event = tracee.wait(flags: Constants::__WALL)
+      initial_event = tracee.wait(flags: Constants::WALL)
       ensure_stopped!(event: initial_event, pid: pid, action: :attach)
       configure_trace_options(pid: pid, options: options)
       tracee

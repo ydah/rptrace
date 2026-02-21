@@ -26,7 +26,7 @@ RSpec.describe Ptrace::Tracee do
     with_ptrace_permission do
       tracee = described_class.spawn("/bin/true")
       tracee.cont
-      event = tracee.wait(flags: Ptrace::Constants::__WALL)
+      event = tracee.wait(flags: Ptrace::Constants::WALL)
 
       expect(event.exited?).to be(true)
       expect(event.exit_status).to eq(0)
@@ -44,7 +44,7 @@ RSpec.describe Ptrace::Tracee do
       seen_syscall_stop = false
       256.times do
         tracee.syscall
-        event = tracee.wait(flags: Ptrace::Constants::__WALL)
+        event = tracee.wait(flags: Ptrace::Constants::WALL)
 
         break if event.exited? || event.signaled?
         next unless event.syscall_stop?

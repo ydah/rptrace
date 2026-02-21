@@ -6,14 +6,18 @@ module Ptrace
       tracee = Tracee.spawn(command, *args)
       yield tracee
     ensure
-      tracee&.detach
+      begin
+        tracee&.detach
+      rescue Error, Errno::ESRCH
+        nil
+      end
     end
 
     def strace(command, *args)
       trace(command, *args) do |tracee|
         loop do
           tracee.syscall
-          event = tracee.wait(flags: Constants::__WALL)
+          event = tracee.wait(flags: Constants::WALL)
           break if event.exited? || event.signaled?
           next unless event.syscall_stop?
 
@@ -23,7 +27,7 @@ module Ptrace
           yield SyscallEvent.new(tracee: tracee, syscall: syscall, args: syscall_args, phase: :enter)
 
           tracee.syscall
-          exit_event = tracee.wait(flags: Constants::__WALL)
+          exit_event = tracee.wait(flags: Constants::WALL)
           break if exit_event.exited? || exit_event.signaled?
 
           yield SyscallEvent.new(

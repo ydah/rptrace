@@ -60,7 +60,7 @@ module Ptrace
     WNOHANG = 1
     WUNTRACED = 2
     WCONTINUED = 8
-    __WALL = 0x40000000
+    WALL = 0x40000000
   end
 
   module WaitStatus
