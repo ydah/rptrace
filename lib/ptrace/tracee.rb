@@ -232,7 +232,8 @@ module Ptrace
     # @param index [Integer]
     # @return [Hash<Symbol, Integer>] keys: :filter_off, :flags
     def seccomp_metadata(index: 0)
-      metadata = CStructs.pack_seccomp_metadata(filter_off: index, flags: 0)
+      filter_index = normalize_non_negative_index(index, label: :index)
+      metadata = CStructs.pack_seccomp_metadata(filter_off: filter_index, flags: 0)
       pointer = Fiddle::Pointer.malloc(CStructs.seccomp_metadata_size)
       pointer[0, metadata.bytesize] = metadata
       Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_METADATA, pid, CStructs.seccomp_metadata_size, pointer.to_i)
@@ -244,9 +245,8 @@ module Ptrace
     # @param index [Integer]
     # @return [Array<Hash<Symbol, Integer>>]
     def seccomp_filter(index: 0)
-      filter_index = Integer(index)
-      count = Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_FILTER, pid, filter_index, 0)
-      insn_count = Integer(count)
+      filter_index = normalize_non_negative_index(index, label: :index)
+      insn_count = seccomp_filter_instruction_count(index: filter_index)
       return [] if insn_count <= 0
 
       byte_length = insn_count * CStructs::SECCOMP_FILTER_INSN_SIZE
@@ -254,6 +254,26 @@ module Ptrace
       copied = Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_FILTER, pid, filter_index, pointer.to_i)
       copied_count = Integer(copied)
       CStructs.decode_seccomp_filter(pointer[0, copied_count * CStructs::SECCOMP_FILTER_INSN_SIZE])
+    end
+
+    # Returns true when kernel supports seccomp metadata query for this tracee.
+    #
+    # @return [Boolean]
+    def seccomp_supported?
+      seccomp_metadata(index: 0)
+      true
+    rescue InvalidArgError
+      false
+    end
+
+    # Returns true when tracee has seccomp filter instructions available at index.
+    #
+    # @param index [Integer]
+    # @return [Boolean]
+    def seccomp_filter_available?(index: 0)
+      seccomp_filter_instruction_count(index: index).positive?
+    rescue InvalidArgError
+      false
     end
 
     # Returns symbolic names for seccomp metadata flags.
@@ -358,6 +378,18 @@ module Ptrace
 
       names << :"unknown_0x#{value.to_s(16)}" unless value.zero?
       names
+    end
+
+    def seccomp_filter_instruction_count(index:)
+      filter_index = normalize_non_negative_index(index, label: :index)
+      Integer(Binding.safe_ptrace(Constants::PTRACE_SECCOMP_GET_FILTER, pid, filter_index, 0))
+    end
+
+    def normalize_non_negative_index(value, label:)
+      int = Integer(value)
+      raise ArgumentError, "#{label} must be non-negative" if int.negative?
+
+      int
     end
 
     class << self

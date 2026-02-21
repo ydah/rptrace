@@ -172,6 +172,51 @@ RSpec.describe Ptrace::Tracee do
       expect(tracee.seccomp_filter(index: 0)).to eq([])
     end
 
+    it "returns true when seccomp metadata query succeeds" do
+      allow(tracee).to receive(:seccomp_metadata).with(index: 0).and_return(filter_off: 0, flags: 0)
+
+      expect(tracee.seccomp_supported?).to be(true)
+    end
+
+    it "returns false when seccomp metadata query is unsupported" do
+      allow(tracee).to receive(:seccomp_metadata).with(index: 0).and_raise(Ptrace::InvalidArgError.new("unsupported"))
+
+      expect(tracee.seccomp_supported?).to be(false)
+    end
+
+    it "returns true when seccomp filter instructions are available" do
+      allow(Ptrace::Binding).to receive(:safe_ptrace).with(
+        Ptrace::Constants::PTRACE_SECCOMP_GET_FILTER,
+        4321,
+        1,
+        0
+      ).and_return(3)
+
+      expect(tracee.seccomp_filter_available?(index: 1)).to be(true)
+    end
+
+    it "returns false when seccomp filter instructions are unavailable" do
+      allow(Ptrace::Binding).to receive(:safe_ptrace).with(
+        Ptrace::Constants::PTRACE_SECCOMP_GET_FILTER,
+        4321,
+        1,
+        0
+      ).and_return(0)
+
+      expect(tracee.seccomp_filter_available?(index: 1)).to be(false)
+    end
+
+    it "returns false when seccomp filter query is unsupported" do
+      allow(Ptrace::Binding).to receive(:safe_ptrace).with(
+        Ptrace::Constants::PTRACE_SECCOMP_GET_FILTER,
+        4321,
+        1,
+        0
+      ).and_raise(Ptrace::InvalidArgError.new("unsupported"))
+
+      expect(tracee.seccomp_filter_available?(index: 1)).to be(false)
+    end
+
     it "decodes known seccomp metadata flag names" do
       allow(tracee).to receive(:seccomp_metadata).with(index: 0).and_return(
         filter_off: 0,
@@ -185,6 +230,18 @@ RSpec.describe Ptrace::Tracee do
       allow(tracee).to receive(:seccomp_metadata).with(index: 0).and_return(filter_off: 0, flags: 0x40)
 
       expect(tracee.seccomp_metadata_flag_names).to eq([:unknown_0x40])
+    end
+
+    it "rejects negative seccomp metadata index" do
+      expect do
+        tracee.seccomp_metadata(index: -1)
+      end.to raise_error(ArgumentError, /index must be non-negative/)
+    end
+
+    it "rejects negative seccomp filter index" do
+      expect do
+        tracee.seccomp_filter(index: -1)
+      end.to raise_error(ArgumentError, /index must be non-negative/)
     end
   end
 
