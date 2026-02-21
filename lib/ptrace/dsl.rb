@@ -26,26 +26,31 @@ module Ptrace
     # @param command [String] executable path or command name
     # @param args [Array<String>] command arguments
     # @param follow_children [Boolean] follow clone/fork/vfork descendants
-    # @yieldparam event [Ptrace::SyscallEvent]
+    # @param yield_seccomp [Boolean] yield seccomp stop events as {Ptrace::SeccompEvent}
+    # @yieldparam event [Ptrace::SyscallEvent, Ptrace::SeccompEvent]
     # @return [void]
-    def strace(command, *args, follow_children: false)
+    def strace(command, *args, follow_children: false, yield_seccomp: false)
       options = follow_children ? FOLLOW_CHILD_TRACE_OPTIONS : Tracee::DEFAULT_TRACE_OPTIONS
       trace(command, *args, options: options) do |tracee|
         if follow_children
-          strace_with_children(tracee) { |event| yield event }
+          strace_with_children(tracee, yield_seccomp: yield_seccomp) { |event| yield event }
         else
-          strace_single(tracee) { |event| yield event }
+          strace_single(tracee, yield_seccomp: yield_seccomp) { |event| yield event }
         end
       end
     end
 
     private
 
-    def strace_single(tracee)
+    def strace_single(tracee, yield_seccomp:)
       loop do
         tracee.syscall
         event = tracee.wait(flags: Constants::WALL)
         break if event.exited? || event.signaled?
+        if yield_seccomp && event.seccomp_event?
+          yield build_seccomp_event(tracee)
+          next
+        end
         next unless event.syscall_stop?
 
         syscall = tracee.current_syscall
@@ -67,7 +72,7 @@ module Ptrace
       end
     end
 
-    def strace_with_children(root_tracee)
+    def strace_with_children(root_tracee, yield_seccomp:)
       tracees = { root_tracee.pid => root_tracee }
       pending_syscalls = {}
       root_tracee.syscall
@@ -93,7 +98,9 @@ module Ptrace
           child_tracee.syscall
         end
 
-        if event.syscall_stop?
+        if yield_seccomp && event.seccomp_event?
+          yield build_seccomp_event(tracee)
+        elsif event.syscall_stop?
           if pending_syscalls.key?(event.pid)
             entry = pending_syscalls.delete(event.pid)
             yield SyscallEvent.new(
@@ -115,6 +122,20 @@ module Ptrace
       end
     ensure
       tracees&.each_value { |tracee| safe_detach(tracee) }
+    end
+
+    def build_seccomp_event(tracee)
+      metadata_flags = begin
+        tracee.seccomp_metadata_flag_names
+      rescue Error
+        []
+      end
+      SeccompEvent.new(
+        tracee: tracee,
+        syscall: tracee.current_syscall,
+        data: tracee.seccomp_data,
+        metadata_flags: metadata_flags
+      )
     end
 
     def safe_detach(tracee)

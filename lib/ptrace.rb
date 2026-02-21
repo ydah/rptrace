@@ -14,6 +14,7 @@ require_relative "ptrace/breakpoint"
 require_relative "ptrace/proc_maps"
 require_relative "ptrace/syscall"
 require_relative "ptrace/syscall_event"
+require_relative "ptrace/seccomp_event"
 require_relative "ptrace/tracee"
 require_relative "ptrace/dsl"
 
