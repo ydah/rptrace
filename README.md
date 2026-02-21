@@ -19,7 +19,7 @@ Linux `ptrace(2)` is powerful but low-level. This gem wraps process control, reg
 - Software breakpoints on x86_64 (`Tracee#set_breakpoint`, `remove_breakpoint`)
 - Syscall lookup (`Ptrace::Syscall`) for `x86_64`/`aarch64`
 - High-level tracing helper `Ptrace.strace` (`follow_children` supported)
-- ptrace event helpers (`Tracee#event_message`, `Tracee#seccomp_data`)
+- ptrace event helpers (`Tracee#event_message`, `Tracee#seccomp_data`, `Tracee#seccomp_metadata`, `Tracee#seccomp_filter`)
 
 ## Installation
 
@@ -63,6 +63,15 @@ tracee = Ptrace::Tracee.attach(target_pid)
 bp = tracee.set_breakpoint(0x401000)
 # ...
 bp.restore
+```
+
+Inspect seccomp filter metadata and decoded BPF instructions:
+
+```ruby
+tracee = Ptrace::Tracee.attach(target_pid)
+tracee.enable_seccomp_events!
+meta = tracee.seccomp_metadata(index: 0) # => { filter_off: 0, flags: ... }
+insns = tracee.seccomp_filter(index: 0)  # => [{ code:, jt:, jf:, k: }, ...]
 ```
 
 ## Permission Guide
