@@ -1,5 +1,18 @@
 # frozen_string_literal: true
 
+if ENV["COVERAGE"] == "1"
+  require "simplecov"
+
+  minimum_line = Integer(ENV.fetch("COVERAGE_MIN_LINE", "95"), 10)
+
+  SimpleCov.start do
+    track_files "lib/**/*.rb"
+    add_filter "/spec/"
+    add_filter "/sig/"
+    minimum_coverage line: minimum_line
+  end
+end
+
 require "ptrace"
 
 RSpec.configure do |config|

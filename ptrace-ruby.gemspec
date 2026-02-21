@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "fiddle", ">= 1.1"
   spec.add_development_dependency "rspec", "~> 3.12"
+  spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "rubocop", "~> 1.60"
   spec.add_development_dependency "yard", "~> 0.9"
 end

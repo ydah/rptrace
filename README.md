@@ -68,6 +68,12 @@ PTRACE_RUN_INTEGRATION=1 bundle exec rspec spec/integration
 bundle exec rspec
 ```
 
+Run specs with coverage threshold check:
+
+```bash
+COVERAGE=1 COVERAGE_MIN_LINE=95 bundle exec rspec spec/unit spec/ptrace_spec.rb
+```
+
 Generate syscall tables from Linux headers (`x86_64` / `aarch64`):
 
 ```bash

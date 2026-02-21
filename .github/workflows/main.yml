@@ -23,6 +23,9 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - name: Run unit specs
+        env:
+          COVERAGE: "1"
+          COVERAGE_MIN_LINE: "95"
         run: bundle exec rspec spec/unit spec/ptrace_spec.rb
 
   integration:
