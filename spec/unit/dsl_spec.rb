@@ -255,5 +255,44 @@ RSpec.describe Ptrace do
       expect(yielded.first.tracee).to eq(root_tracee)
       expect(yielded.first.metadata_flags).to eq([:tsync])
     end
+
+    it "suppresses NoProcessError when resuming a child in follow_children mode" do
+      root_tracee = instance_double(Ptrace::Tracee)
+      child_tracee = instance_double(Ptrace::Tracee)
+      allow(root_tracee).to receive(:pid).and_return(111)
+      allow(root_tracee).to receive(:detach)
+      allow(root_tracee).to receive(:syscall).and_return(root_tracee)
+      allow(root_tracee).to receive(:event_message).and_return(222)
+      allow(child_tracee).to receive(:pid).and_return(222)
+      allow(child_tracee).to receive(:set_options).and_return(child_tracee)
+      allow(child_tracee).to receive(:syscall).and_raise(Ptrace::NoProcessError.new("gone"))
+
+      expect(Ptrace::Tracee).to receive(:spawn).and_return(root_tracee)
+      expect(Ptrace::Tracee).to receive(:new).with(222).and_return(child_tracee)
+
+      clone_event = instance_double(
+        Ptrace::Event,
+        pid: 111,
+        exited?: false,
+        signaled?: false,
+        syscall_stop?: false,
+        seccomp_event?: false,
+        fork_like_event?: true
+      )
+      root_exit = instance_double(
+        Ptrace::Event,
+        pid: 111,
+        exited?: true,
+        signaled?: false,
+        syscall_stop?: false,
+        seccomp_event?: false,
+        fork_like_event?: false
+      )
+      allow(Ptrace::Tracee).to receive(:wait_any).and_return(clone_event, root_exit)
+
+      expect do
+        described_class.strace("/bin/echo", "hello", follow_children: true) { |_event| }
+      end.not_to raise_error
+    end
   end
 end

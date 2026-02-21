@@ -76,7 +76,11 @@ module Ptrace
     def strace_with_children(root_tracee, yield_seccomp:)
       tracees = { root_tracee.pid => root_tracee }
       pending_syscalls = {}
-      root_tracee.syscall
+      begin
+        root_tracee.syscall
+      rescue NoProcessError
+        return
+      end
 
       while tracees.any?
         event = Tracee.wait_any(flags: Constants::WALL)
@@ -96,7 +100,7 @@ module Ptrace
             tracees[child_pid] = created
           end
           pending_syscalls.delete(child_pid)
-          child_tracee.syscall
+          resume_tracee_syscall(child_tracee, tracees: tracees, pending_syscalls: pending_syscalls)
         end
 
         if yield_seccomp && event.seccomp_event?
@@ -119,10 +123,18 @@ module Ptrace
           end
         end
 
-        tracee.syscall
+        resume_tracee_syscall(tracee, tracees: tracees, pending_syscalls: pending_syscalls)
       end
     ensure
       tracees&.each_value { |tracee| safe_detach(tracee) }
+    end
+
+    def resume_tracee_syscall(tracee, tracees:, pending_syscalls:)
+      tracee.syscall
+    rescue NoProcessError
+      pending_syscalls.delete(tracee.pid)
+      tracees.delete(tracee.pid)
+      nil
     end
 
     def build_seccomp_event(tracee)
