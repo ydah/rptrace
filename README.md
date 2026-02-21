@@ -83,6 +83,8 @@ Inspect seccomp filter metadata and decoded BPF instructions:
 ```ruby
 tracee = Ptrace::Tracee.attach(target_pid)
 tracee.enable_seccomp_events!
+supported = tracee.seccomp_supported?
+available = tracee.seccomp_filter_available?(index: 0)
 meta = tracee.seccomp_metadata(index: 0) # => { filter_off: 0, flags: ... }
 flag_names = tracee.seccomp_metadata_flag_names(index: 0) # => [:tsync, :log, ...]
 insns = tracee.seccomp_filter(index: 0)  # => [{ code:, jt:, jf:, k: }, ...]
